@@ -1,11 +1,13 @@
 /**
  * @jest-environment jsdom
  */
-import React from "react";
+import type { Gage } from "@models/Gage";
+import type { Region } from "@models/Region";
 import { render } from "@testing-library/react-native";
+import React from "react";
 
-import MapLibreWebGageWebMap from "../MapLibreWebGageMap";
 import * as MapLibre from "@vis.gl/react-maplibre";
+import MapLibreWebGageWebMap from "../MapLibreWebGageMap";
 
 jest.mock("maplibre-gl/dist/maplibre-gl.css", () => {});
 
@@ -31,13 +33,20 @@ jest.mock("../TrendIcon", () => ({
   TREND_ICON_TYPES: { Map: "Map" },
 }));
 
-const MockMap = MapLibre.Map as jest.Mock;
-const MockMarker = MapLibre.Marker as jest.Mock;
+type RegionOverrides = {
+  id?: number;
+  defaultWebMapBounds?: [number, number, number, number];
+  regionBounds?: [number, number, number, number];
+};
 
-const makeGage = (overrides: Record<string, unknown> = {}) =>
-  ({ locationId: "test", latitude: 47.5, longitude: -121.8, ...overrides } as any);
+const MockMap = MapLibre.Map as never as jest.Mock;
+const MockMarker = MapLibre.Marker as never as jest.Mock;
 
-const makeRegion = (overrides: Record<string, unknown> = {}) => ({ id: 1, ...overrides } as any);
+const makeGage = (overrides: Partial<Gage> = {}): Gage =>
+  ({ locationId: "test", latitude: 47.5, longitude: -121.8, ...overrides } as Gage);
+
+const makeRegion = (overrides: RegionOverrides = {}): Region =>
+  ({ id: 1, ...overrides } as never as Region);
 
 beforeEach(() => {
   MockMap.mockClear();
@@ -63,7 +72,7 @@ describe("MapLibreWebGageMap — marker filtering", () => {
   it("skips a gauge that has no latitude", () => {
     const gages = [
       makeGage({ locationId: "valid", latitude: 47.5, longitude: -121.8 }),
-      makeGage({ locationId: "no-lat", latitude: null, longitude: -121.8 }),
+      makeGage({ locationId: "no-lat", latitude: undefined, longitude: -121.8 }),
     ];
     render(
       <MapLibreWebGageWebMap
@@ -78,7 +87,7 @@ describe("MapLibreWebGageMap — marker filtering", () => {
   });
 
   it("skips a gage that has no longitude", () => {
-    const gages = [makeGage({ locationId: "no-lng", latitude: 47.5, longitude: null })];
+    const gages = [makeGage({ locationId: "no-lng", latitude: 47.5, longitude: undefined })];
     render(
       <MapLibreWebGageWebMap
         gages={gages}
@@ -127,7 +136,7 @@ describe("MapLibreWebGageMap — startBounds", () => {
   });
 
   it("falls back to region.defaultWebMapBounds when singleGage has null latitude", () => {
-    const singleGage = makeGage({ latitude: null, longitude: -122.0 });
+    const singleGage = makeGage({ latitude: undefined, longitude: -122.0 });
     const region = makeRegion({ defaultWebMapBounds: [-122.3, 46.9, -121.3, 48.3] });
     render(
       <MapLibreWebGageWebMap
@@ -142,7 +151,7 @@ describe("MapLibreWebGageMap — startBounds", () => {
   });
 
   it("falls back to region.defaultWebMapBounds when singleGage has null longitude", () => {
-    const singleGage = makeGage({ latitude: 47.0, longitude: null });
+    const singleGage = makeGage({ latitude: 47.0, longitude: undefined });
     const region = makeRegion({ defaultWebMapBounds: [-122.3, 46.9, -121.3, 48.3] });
     render(
       <MapLibreWebGageWebMap

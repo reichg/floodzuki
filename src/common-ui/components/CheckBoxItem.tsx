@@ -1,11 +1,11 @@
+import ExpoCheckbox from "expo-checkbox";
 import React from "react";
 import { ActivityIndicator, TouchableOpacity } from "react-native";
-import Checkbox from "expo-checkbox";
 
-import { Cell, Row } from "./Common";
-import { RegularText } from "./Text";
 import { Spacing } from "@common-ui/constants/spacing";
+import { Cell, Row } from "./Common";
 import { Ternary } from "./Conditional";
+import { RegularText } from "./Text";
 
 type CheckBoxItemProps = {
   value: boolean;
@@ -35,7 +35,7 @@ const CheckBoxItem = (props: CheckBoxItemProps): React.ReactElement => {
           <Cell>
             <ActivityIndicator />
           </Cell>
-          <Checkbox value={value} onValueChange={onChange} disabled={disabled} />
+          <ExpoCheckbox value={value} onValueChange={onChange} disabled={disabled} />
         </Ternary>
         <Cell left={Spacing.extraSmall} flex>
           <RegularText muted={disabled}>{label}</RegularText>

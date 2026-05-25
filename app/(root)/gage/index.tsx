@@ -1,16 +1,15 @@
-import React, { useEffect } from "react";
-import { ViewStyle, FlatList, TouchableOpacity, useWindowDimensions } from "react-native";
 import { ErrorBoundaryProps, Link, useRouter } from "expo-router";
 import Head from "expo-router/head";
+import React, { useEffect } from "react";
+import { FlatList, TouchableOpacity, useWindowDimensions, ViewStyle } from "react-native";
 
 import { observer } from "mobx-react-lite";
 
-import { Screen } from "@common-ui/components/Screen";
-import { ErrorDetails } from "@components/ErrorDetails";
+import { Card } from "@common-ui/components/Card";
 import { AbsoluteContainer, Cell, Row } from "@common-ui/components/Common";
-import { Colors } from "@common-ui/constants/colors";
-import { useStores } from "@models/helpers/useStores";
-import { Spacing } from "@common-ui/constants/spacing";
+import { If, Ternary } from "@common-ui/components/Conditional";
+import { Label, LargeLabel } from "@common-ui/components/Label";
+import { Screen } from "@common-ui/components/Screen";
 import {
   LabelText,
   LargerTitle,
@@ -18,25 +17,26 @@ import {
   SmallTitle,
   TinyText,
 } from "@common-ui/components/Text";
-import { Card } from "@common-ui/components/Card";
-import { Label, LargeLabel } from "@common-ui/components/Label";
-import { If, Ternary } from "@common-ui/components/Conditional";
-import { isAndroid, isWeb, useResponsive } from "@common-ui/utils/responsive";
+import { Colors } from "@common-ui/constants/colors";
+import { Spacing } from "@common-ui/constants/spacing";
+import { isWeb, useResponsive } from "@common-ui/utils/responsive";
+import { ErrorDetails } from "@components/ErrorDetails";
 import { Gage, STATUSES } from "@models/Gage";
+import { useStores } from "@models/helpers/useStores";
 
-import { useUtils } from "@utils/utils";
-import { formatReadingTime } from "@utils/useTimeFormat";
-import { ROUTES } from "app/_layout";
-import TrendIcon, { TREND_ICON_TYPES } from "@components/TrendIcon";
-import { useInterval, useTimeout } from "@utils/useTimeout";
 import EmptyComponent from "@common-ui/components/EmptyComponent";
-import { GageChart } from "@components/GageChart";
-import GageMap from "@components/GageMap";
-import GageListItemChart from "@components/GageListItemChart";
-import WebFooter from "@components/WebFooter";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
-import { TxKeyPath } from "@i18n/i18n";
 import { Timing } from "@common-ui/constants/timing";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { GageChart } from "@components/GageChart";
+import GageListItemChart from "@components/GageListItemChart";
+import GageMap from "@components/GageMap";
+import TrendIcon, { TREND_ICON_TYPES } from "@components/TrendIcon";
+import WebFooter from "@components/WebFooter";
+import { TxKeyPath } from "@i18n/i18n";
+import { formatReadingTime } from "@utils/useTimeFormat";
+import { useInterval, useTimeout } from "@utils/useTimeout";
+import { useUtils } from "@utils/utils";
+import { ROUTES } from "app/_layout";
 import { RefreshControl, ScrollView } from "react-native-gesture-handler";
 import { Region } from "../../../src/models/Region";
 
@@ -55,17 +55,12 @@ interface GageItemProps {
 
 const GageStatus = observer(({ gage }: { gage: Gage }) => {
   const { t } = useLocale();
+  const floodLevel = gage.gageStatus?.floodLevel ?? "Offline";
 
-  return (
-    <LargeLabel
-      type={STATUSES[gage?.gageStatus?.floodLevel]}
-      text={t(`statuses.${gage?.gageStatus?.floodLevel}` as TxKeyPath)}
-    />
-  );
+  return <LargeLabel type={STATUSES[floodLevel]} text={t(`statuses.${floodLevel}` as TxKeyPath)} />;
 });
 
 const GageItem = observer(function GageItem({ item }: GageItemProps) {
-  const router = useRouter();
   const { isMobile } = useResponsive();
   const { formatFlow, formatHeight } = useUtils();
   const { getTimezone } = useStores();
@@ -116,7 +111,10 @@ const GageItem = observer(function GageItem({ item }: GageItemProps) {
                 <If condition={!!lastReading?.waterHeight}>
                   <DescriptiveText color={Colors.lightDark}>
                     {formatHeight(lastReading?.waterHeight)}
-                    <If condition={lastReading?.waterDischarge > 0}>
+                    <If
+                      condition={
+                        lastReading?.waterDischarge != null && lastReading.waterDischarge > 0
+                      }>
                       {" / "}
                       {formatFlow(lastReading?.waterDischarge)}
                     </If>
@@ -125,7 +123,7 @@ const GageItem = observer(function GageItem({ item }: GageItemProps) {
                 <If condition={!!lastReading?.timestamp}>
                   <SmallText>
                     {" @ "}
-                    {formatReadingTime(lastReading?.timestamp, tz)}
+                    {lastReading?.timestamp ? formatReadingTime(lastReading.timestamp, tz) : ""}
                   </SmallText>
                 </If>
               </Row>
@@ -137,7 +135,7 @@ const GageItem = observer(function GageItem({ item }: GageItemProps) {
   );
 });
 
-const HeaderComponent = ({ gages, region }: { gages: Gage[]; region: Region }) => {
+const HeaderComponent = ({ gages, region }: { gages: Gage[]; region?: Region }) => {
   const { isMobile } = useResponsive();
   const router = useRouter();
 
@@ -184,7 +182,7 @@ const HomeScreen = observer(function HomeScreen() {
     if (isFetched) {
       gagesStore.fetchData();
     }
-  }, [isFetched]);
+  }, [gagesStore, isFetched]);
 
   // Update gage status every 5 minutes
   useInterval(() => {
@@ -203,7 +201,7 @@ const HomeScreen = observer(function HomeScreen() {
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
-  }, [gagesStore.fetchData]);
+  }, [gagesStore]);
 
   const router = useRouter();
   const locations = hidden ? [] : getLocationsWithGages();

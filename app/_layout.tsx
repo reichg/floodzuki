@@ -1,22 +1,22 @@
-import React, { useEffect } from "react";
-import { Slot } from "expo-router";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useFonts } from "expo-font";
+import { Slot } from "expo-router";
+import Head from "expo-router/head";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import Head from "expo-router/head";
+import React, { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 import { customFontsToLoad } from "@common-ui/constants/typography";
 import { useInitialRootStore } from "@models/helpers/useStores";
 
-import { DatePickerProvider } from "@common-ui/contexts/DatePickerContext";
+import { If } from "@common-ui/components/Conditional";
 import { AssetsProvider, useAppAssets } from "@common-ui/contexts/AssetsContext";
-import { isWeb } from "@common-ui/utils/responsive";
+import { DatePickerProvider } from "@common-ui/contexts/DatePickerContext";
 import { GoogleAuthProvider } from "@common-ui/contexts/GoogleAuthContext";
 import { LocaleProvider, useLocale } from "@common-ui/contexts/LocaleContext";
+import { isWeb } from "@common-ui/utils/responsive";
 import { initSentry } from "@utils/sentry";
-import { If } from "@common-ui/components/Conditional";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 initSentry();
@@ -114,13 +114,14 @@ export default function AppLayout() {
 function App() {
   const { getAsset } = useAppAssets();
   const { t } = useLocale();
+  const favicon = getAsset("favicon");
 
   return (
     <>
       <If condition={isWeb}>
         {/** This is used to ensure that favicon is displayed on web */}
         <Head>
-          <link rel="icon" href={getAsset("favicon").uri} />
+          <link rel="icon" href={favicon?.uri} />
           {/* Sans-serif fallback while Google Fonts loads — prevents brief serif flash */}
           <style>{`body { font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; }`}</style>
           {/* Load custom fonts */}
@@ -136,7 +137,7 @@ function App() {
           <meta property="expo:handoff" content="true" />
           <meta name="apple-itunes-app" content="app-id=6448645748" />
           <meta name="google-play-app" content="app-id=com.floodzilla.floodzuki" />
-          <link rel="apple-touch-icon" href={getAsset("favicon").uri} />
+          <link rel="apple-touch-icon" href={favicon?.uri} />
           <script async src="https://www.googletagmanager.com/gtag/js?id=UA-302444-12"></script>
           <script src="//apis.google.com/js/client:platform.js?onload=start"></script>
           <script src="//www.google.com/recaptcha/api.js" async defer></script>

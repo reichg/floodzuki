@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { TouchableOpacity } from "react-native";
 import { ErrorBoundaryProps, Link, Stack, useLocalSearchParams } from "expo-router";
 import Head from "expo-router/head";
+import React, { useState } from "react";
+import { TouchableOpacity } from "react-native";
 
 import { observer } from "mobx-react-lite";
 
@@ -15,25 +15,25 @@ import { Colors } from "@common-ui/constants/colors";
 import { Spacing } from "@common-ui/constants/spacing";
 import { MobileScreen, WideScreen, isMobile, useResponsive } from "@common-ui/utils/responsive";
 
-import { useStores } from "@models/helpers/useStores";
 import { Gage } from "@models/Gage";
+import { useStores } from "@models/helpers/useStores";
 
+import CalloutReadingCard from "@components/CalloutReadingCard";
 import { ErrorDetails } from "@components/ErrorDetails";
 import { GageDetailsChart } from "@components/GageDetailsChart";
-import CalloutReadingCard from "@components/CalloutReadingCard";
 import GageImageCard from "@components/GageImageCard";
 import GageInfoCard from "@components/GageInfoCard";
 import StatusLevelsCard from "@components/StatusLevelsCard";
 
-import { ROUTES } from "app/_layout";
-import Icon from "@common-ui/components/Icon";
 import { Card } from "@common-ui/components/Card";
 import EmptyComponent from "@common-ui/components/EmptyComponent";
-import GageMap from "@components/GageMap";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
-import { useTimeout } from "@utils/useTimeout";
-import { useGoBack } from "@utils/useGoBack";
+import Icon from "@common-ui/components/Icon";
 import { Timing } from "@common-ui/constants/timing";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import GageMap from "@components/GageMap";
+import { useGoBack } from "@utils/useGoBack";
+import { useTimeout } from "@utils/useTimeout";
+import { ROUTES } from "app/_layout";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -257,7 +257,7 @@ const GageScreen = observer(function GageScreen() {
 
   const gage = hidden ? undefined : gagesStore.getGageByLocationId(gageId);
 
-  if (!!gage && !gage?.locationId) {
+  if (!gage?.locationId) {
     return (
       <>
         <Head>

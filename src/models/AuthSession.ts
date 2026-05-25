@@ -1,6 +1,4 @@
-import { Instance, SnapshotOut, types, flow } from "mobx-state-tree";
-import { dataFetchingProps, withDataFetchingActions } from "./helpers/withDataFetchingProps";
-import { withSetPropAction } from "./helpers/withSetPropsAction";
+import { i18n } from "@i18n/i18n";
 import {
   ChangeEmailParams,
   CreateAccountParams,
@@ -19,10 +17,12 @@ import {
   api,
 } from "@services/api";
 import { registerForPushNotificationsAsync } from "@services/pushNotifications";
-import { Platform } from "react-native";
-import { unregisterForNotificationsAsync } from "expo-notifications";
-import { i18n } from "@i18n/i18n";
 import { logError } from "@utils/sentry";
+import { unregisterForNotificationsAsync } from "expo-notifications";
+import { Instance, SnapshotOut, flow, types } from "mobx-state-tree";
+import { Platform } from "react-native";
+import { dataFetchingProps, withDataFetchingActions } from "./helpers/withDataFetchingProps";
+import { withSetPropAction } from "./helpers/withSetPropsAction";
 
 // AuthSession
 
@@ -333,7 +333,9 @@ export const AuthSessionStoreModel = types
       const response = yield api.verifyEmail(params);
 
       if (response.kind === "ok") {
-        store.user.emailVerified = true;
+        if (store.user) {
+          store.user.emailVerified = true;
+        }
       } else {
         store.setError(response.data);
       }
@@ -369,8 +371,10 @@ export const AuthSessionStoreModel = types
       const response = yield api.verifyPhoneCode(params);
 
       if (response.kind === "ok") {
-        store.user.phone = params.phone;
-        store.user.phoneVerified = true;
+        if (store.user) {
+          store.user.phone = params.phone;
+          store.user.phoneVerified = true;
+        }
       } else {
         store.setError(response.data);
       }
@@ -574,7 +578,7 @@ export const AuthSessionStoreModel = types
     };
   });
 
-export interface AuthSessionStore extends Instance<typeof AuthSessionStoreModel> {}
-export interface AuthSessionStoreSnapshot extends SnapshotOut<typeof AuthSessionStoreModel> {}
+export type AuthSessionStore = Instance<typeof AuthSessionStoreModel>;
+export type AuthSessionStoreSnapshot = SnapshotOut<typeof AuthSessionStoreModel>;
 
-export interface User extends Instance<typeof UserModel> {}
+export type User = Instance<typeof UserModel>;

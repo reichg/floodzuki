@@ -1,8 +1,15 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-import React from "react";
-import { render, fireEvent, act } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import dayjs from "dayjs";
+import React from "react";
 import { DateRangePickerRangeV2 } from "../DateRangePickerRangeV2";
+
+type MockButtonProps = {
+  title?: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  testID?: string;
+};
 
 let capturedPickerOnChange: ((params: { startDate?: Date; endDate?: Date }) => void) | null = null;
 
@@ -27,7 +34,7 @@ jest.mock("@common-ui/contexts/DatePickerContext", () => ({
 jest.mock("@common-ui/components/Button", () => {
   const ReactModule = require("react");
   const { Pressable } = require("react-native");
-  const renderButton = ({ title, onPress, disabled, testID }: any) =>
+  const renderButton = ({ title, onPress, disabled, testID }: MockButtonProps) =>
     ReactModule.createElement(
       Pressable,
       {

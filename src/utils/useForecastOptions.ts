@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { getSnapshot } from "mobx-state-tree";
+import { useMemo } from "react";
 
+import { Forecast } from "@models/Forecasts";
 import { GageSummary } from "@models/RootStore";
 import { useStores } from "@models/helpers/useStores";
-import { Forecast } from "@models/Forecasts";
 
 import { Colors, lightenHexColor } from "@common-ui/constants/colors";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
@@ -18,13 +19,25 @@ declare module "highcharts" {
 
 const STAGE_TWO_YAXIS_MARGIN = 500;
 
+type ForecastChartGage = Pick<GageSummary, "id" | "title" | "color">;
+
 interface BuildOptionsProps {
   daysBefore: number;
   daysAfter: number;
   forecasts: Forecast[];
-  gages: GageSummary[];
+  gages: ForecastChartGage[];
   timezone: string;
 }
+
+type ForecastSeriesPoint = Highcharts.PointOptionsObject & {
+  x: number;
+  y: number;
+  xLabel: string;
+  xLabelShort: string;
+  name: string;
+  shortName?: string;
+  isForecast: boolean;
+};
 
 const shouldShowFloodLine = (forecast: Forecast, isCombinedForecast: boolean) => {
   if (!isCombinedForecast) {
@@ -49,36 +62,48 @@ const getFloodStageLabel = (forecast: Forecast, isCombinedForecast: boolean) => 
   }
 };
 
-const buildSeries = (forecasts: Forecast[], gages: GageSummary[], softMax: number, t) => {
-  const series = [];
+const buildSeries = (forecasts: Forecast[], gages: ForecastChartGage[], softMax: number, t) => {
+  const series: Highcharts.SeriesSplineOptions[] = [];
   let maxValue = softMax;
 
   forecasts.forEach((forecast) => {
     const gage = gages.find((g) => g.id === forecast.id);
+    const gageColor = gage?.color ?? Colors.gageChartColor;
 
     const dataPoints = forecast.chartReadings;
 
     const seriesName = `${t("forecastChart.observed")}: ${gage?.title}`;
 
-    const normalizedDataPoints = dataPoints.map((p) => {
+    const normalizedDataPoints: ForecastSeriesPoint[] = [];
+
+    dataPoints.forEach((p) => {
+      if (p.x === undefined || p.y === undefined) {
+        return;
+      }
+
       if (p.y > maxValue) {
         maxValue = p.y;
       }
 
-      return {
-        ...p,
+      normalizedDataPoints.push({
+        x: p.x,
+        y: p.y,
+        xLabel: String(p.xLabel ?? ""),
+        xLabelShort: String(p.xLabelShort ?? ""),
+        stage: p.stage,
+        isForecast: p.isForecast,
         name: seriesName,
         shortName: gage?.title,
-      };
+      });
     });
 
     // Data Points
     series.push({
+      type: "spline",
       animation: false,
       name: seriesName,
       data: normalizedDataPoints,
-      color: gage?.color,
-      fillOpacity: 0.5,
+      color: gageColor,
       threshold: 0,
       lineWidth: 2,
       states: {
@@ -103,25 +128,36 @@ const buildSeries = (forecasts: Forecast[], gages: GageSummary[], softMax: numbe
 
     const forecastName = `${t("forecastChart.forecast")}: ${gage?.title}`;
 
-    const noramlizedForecastDataPoints = forecastDataPoints.map((p) => {
+    const normalizedForecastDataPoints: ForecastSeriesPoint[] = [];
+
+    forecastDataPoints.forEach((p) => {
+      if (p.x === undefined || p.y === undefined) {
+        return;
+      }
+
       if (p.y > maxValue) {
         maxValue = p.y;
       }
 
-      return {
-        ...p,
+      normalizedForecastDataPoints.push({
+        x: p.x,
+        y: p.y,
+        xLabel: String(p.xLabel ?? ""),
+        xLabelShort: String(p.xLabelShort ?? ""),
+        stage: p.stage,
+        isForecast: p.isForecast,
         name: forecastName,
         shortName: gage?.title,
-      };
+      });
     });
 
     // Forecast Data Points
     series.push({
+      type: "spline",
       animation: false,
       name: `${t("forecastChart.forecast")}: ${gage?.title}`,
-      data: noramlizedForecastDataPoints,
-      fillOpacity: 0,
-      color: isMobile ? lightenHexColor(gage?.color) : gage?.color,
+      data: normalizedForecastDataPoints,
+      color: isMobile ? lightenHexColor(gageColor) : gageColor,
       threshold: 0,
       lineWidth: 2,
       states: {
@@ -143,7 +179,7 @@ const buildOptions = (props: BuildOptionsProps, t) => {
 
   let stageTwo = 0;
   const isCombinedForecast = forecasts.length > 1;
-  const floodLines = [];
+  const floodLines: Highcharts.YAxisPlotLinesOptions[] = [];
 
   const now = dayjs();
 
@@ -166,7 +202,7 @@ const buildOptions = (props: BuildOptionsProps, t) => {
           color: "#999",
           width: 1,
           value: f.dischargeStageTwo,
-          dashStyle: "dash",
+          dashStyle: "Dash",
           label: {
             text: `${t("forecastChart.floodStage")}: ${getFloodStageLabel(f, isCombinedForecast)}`,
             style: {
@@ -179,7 +215,7 @@ const buildOptions = (props: BuildOptionsProps, t) => {
   });
 
   // Display flooding level
-  const floodBands = [
+  const floodBands: Highcharts.YAxisPlotBandsOptions[] = [
     {
       from: stageTwo,
       to: 10000000,
@@ -200,7 +236,7 @@ const buildOptions = (props: BuildOptionsProps, t) => {
       timezone: timezone,
     },
     title: {
-      text: null,
+      text: undefined,
     },
     plotOptions: {
       series: {
@@ -271,26 +307,45 @@ const buildOptions = (props: BuildOptionsProps, t) => {
 const useForecastOptions = (gages: GageSummary[], daysBefore: number, daysAfter: number) => {
   const { t } = useLocale();
   const rootStore = useStores();
+  const timezone = rootStore.getTimezone();
+  const gageSignature = JSON.stringify(
+    gages.map((gage) => ({ id: gage.id, title: gage.title, color: gage.color }))
+  );
+  const stableGages = useMemo(
+    () => JSON.parse(gageSignature) as ForecastChartGage[],
+    [gageSignature]
+  );
 
-  const gageIds = gages.map((gage) => gage?.id);
-  const forecasts = rootStore.getForecasts(gageIds);
+  const forecastSignature = stableGages
+    .map((gage) => {
+      const forecast = rootStore.forecastsStore.getForecast(gage?.id);
 
-  const [options, setOptions] = useState<Highcharts.Options>({});
+      return forecast ? JSON.stringify(getSnapshot(forecast)) : gage?.id ?? "";
+    })
+    .join("|");
 
-  useEffect(() => {
-    setOptions(
+  const forecastInputs = useMemo(
+    () => ({
+      signature: forecastSignature,
+      forecasts: rootStore.getForecasts(stableGages.map((gage) => gage.id)),
+    }),
+    [forecastSignature, rootStore, stableGages]
+  );
+
+  const options = useMemo(
+    () =>
       buildOptions(
         {
           daysBefore,
           daysAfter,
-          forecasts,
-          gages,
-          timezone: rootStore.getTimezone(),
+          forecasts: forecastInputs.forecasts,
+          gages: stableGages,
+          timezone,
         },
         t
-      )
-    );
-  }, [gages, daysBefore, daysAfter]);
+      ),
+    [daysAfter, daysBefore, forecastInputs, stableGages, t, timezone]
+  );
 
   return options;
 };

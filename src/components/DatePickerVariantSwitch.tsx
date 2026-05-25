@@ -1,10 +1,9 @@
-import React from "react";
-import { Dayjs } from "dayjs";
 import DateRangePicker from "@common-ui/components/DateRangePicker";
-import { SplitDateRangePicker } from "@common-ui/components/SplitDateRangePicker";
 import { DateRangePickerRangeV1 } from "@common-ui/components/DateRangePickerRangeV1";
 import { DateRangePickerRangeV2 } from "@common-ui/components/DateRangePickerRangeV2";
+import { SplitDateRangePicker } from "@common-ui/components/SplitDateRangePicker";
 import Config from "@config/config";
+import { Dayjs } from "dayjs";
 
 // react-native-ui-datepicker installs a side-effect polyfill that replaces
 // Date.prototype.toLocaleString with a non-en-US format. Dayjs's timezone
@@ -13,8 +12,13 @@ import Config from "@config/config";
 // _toLocaleString — restore it now that the package's imports have evaluated.
 const proto = Date.prototype as Date & { _toLocaleString?: Date["toLocaleString"] };
 if (proto._toLocaleString) {
-  Date.prototype.toLocaleString = proto._toLocaleString;
-  delete proto._toLocaleString;
+  // eslint-disable-next-line no-extend-native
+  Object.defineProperty(Date.prototype, "toLocaleString", {
+    value: proto._toLocaleString,
+    configurable: true,
+    writable: true,
+  });
+  Reflect.deleteProperty(proto, "_toLocaleString");
 }
 
 type DatePickerVariantSwitchProps = {
@@ -30,7 +34,8 @@ const DatePickerVariantSwitch = (props: DatePickerVariantSwitchProps) => {
   const { locationId, startDate, endDate, timezone, onChange, onRangeRestricted } = props;
 
   const variant =
-    Config.DATE_PICKER_VARIANT.byLocationId[locationId] ?? Config.DATE_PICKER_VARIANT.default;
+    (locationId ? Config.DATE_PICKER_VARIANT.byLocationId[locationId] : undefined) ??
+    Config.DATE_PICKER_VARIANT.default;
 
   if (variant === "split-v1") {
     return (

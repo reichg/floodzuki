@@ -1,25 +1,25 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { ErrorBoundaryProps, Redirect } from "expo-router";
 import { useGoBack } from "@utils/useGoBack";
+import { ErrorBoundaryProps, Redirect } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
 
-import { Screen, Content } from "@common-ui/components/Screen";
-import { MediumText, RegularText } from "@common-ui/components/Text";
-import { ErrorDetails } from "@components/ErrorDetails";
-import TitleWithBackButton from "@components/TitleWithBackButton";
-import { ROUTES } from "app/_layout";
-import { Spacing } from "@common-ui/constants/spacing";
-import { Card, CardContent, CardFooter } from "@common-ui/components/Card";
-import { Cell, Row, RowOrCell, Spacer } from "@common-ui/components/Common";
-import { Input } from "@common-ui/components/Input";
 import { SolidButton } from "@common-ui/components/Button";
-import { observer } from "mobx-react-lite";
-import { useStores } from "@models/helpers/useStores";
+import { Card, CardContent } from "@common-ui/components/Card";
+import { Cell, Row, RowOrCell, Spacer } from "@common-ui/components/Common";
 import { If } from "@common-ui/components/Conditional";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
-import { useValidations } from "@utils/useValidations";
+import { Input } from "@common-ui/components/Input";
+import { Content, Screen } from "@common-ui/components/Screen";
+import { MediumText, RegularText } from "@common-ui/components/Text";
+import { Spacing } from "@common-ui/constants/spacing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { ErrorDetails } from "@components/ErrorDetails";
+import TitleWithBackButton from "@components/TitleWithBackButton";
+import { useStores } from "@models/helpers/useStores";
+import { useValidations } from "@utils/useValidations";
+import { ROUTES } from "app/_layout";
 import Head from "expo-router/head";
+import { observer } from "mobx-react-lite";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -50,7 +50,7 @@ const VerifyPhoneNumberScreen = observer(function VerifyPhoneNumberScreen() {
   // Clear any errors when the screen is loaded
   useEffect(() => {
     authSessionStore.clearDataFetching();
-  }, []);
+  }, [authSessionStore]);
 
   // Redirect to alerts screen if the user is already verified
   if (codeSent && codeVerified && !authSessionStore.isError && authSessionStore.isPhoneVerified) {

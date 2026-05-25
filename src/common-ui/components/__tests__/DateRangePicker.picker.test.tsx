@@ -1,9 +1,29 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-import React from "react";
-import { render, fireEvent, act } from "@testing-library/react-native";
-import dayjs from "dayjs";
 import localDayJs from "@services/localDayJs";
+import { act, fireEvent, render } from "@testing-library/react-native";
+import dayjs from "dayjs";
+import React from "react";
 import { DateRangePickerRangeV1 } from "../DateRangePickerRangeV1";
+
+type PickerChangeParams = {
+  startDate?: Date;
+  endDate?: Date;
+};
+
+type MockDatePickerProps = {
+  startDate?: string;
+  endDate?: string;
+  minDate?: string;
+  maxDate?: string;
+  onChange?: (params: PickerChangeParams) => void;
+};
+
+type MockButtonProps = {
+  title?: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  testID?: string;
+};
 
 let capturedProps: {
   startDate?: string;
@@ -15,7 +35,7 @@ let capturedProps: {
 
 jest.mock("react-native-ui-datepicker", () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: MockDatePickerProps) => {
     capturedProps = props;
     return null;
   },
@@ -35,7 +55,7 @@ jest.mock("@common-ui/contexts/DatePickerContext", () => ({
 jest.mock("@common-ui/components/Button", () => {
   const ReactModule = require("react");
   const { Pressable } = require("react-native");
-  const renderButton = ({ title, onPress, disabled, testID }: any) =>
+  const renderButton = ({ title, onPress, disabled, testID }: MockButtonProps) =>
     ReactModule.createElement(
       Pressable,
       {
@@ -112,7 +132,8 @@ describe("DateRangePickerRangeV1 — picker props", () => {
     // tapped + 30 = 2026-05-22, today = ~2026-05-03 → clamped to today
     // maxDate must not exceed today in the gauge tz (see flakiness note above).
     const todayInGaugeTz = localDayJs().tz(baseProps.timezone).format("YYYY-MM-DD");
-    expect(capturedProps.maxDate <= todayInGaugeTz).toBe(true);
+    expect(capturedProps.maxDate).toBeDefined();
+    expect(capturedProps.maxDate && capturedProps.maxDate <= todayInGaugeTz).toBe(true);
   });
 
   it("renders Set and Cancel buttons below the calendar", () => {

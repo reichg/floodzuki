@@ -1,3 +1,4 @@
+import type { Gage } from "@models/Gage";
 import localDayJs from "@services/localDayJs";
 import { CHART_OPTIONS } from "../useGageChartOptions";
 
@@ -14,18 +15,18 @@ function makeRange(isNow: boolean) {
 }
 
 function makeOptions() {
-  return { xAxis: {}, _now: localDayJs() } as any;
+  return { xAxis: {}, _now: localDayJs() } as Highcharts.Options;
 }
 
-const mockGageWithPredictions: any = {
+const mockGageWithPredictions = {
   predictedPoints: [{ timestamp: localDayJs(), reading: 5 }],
   dataPoints: [],
-};
+} as Gage;
 
-const mockGageNoPredictions: any = {
+const mockGageNoPredictions = {
   predictedPoints: undefined,
   dataPoints: [],
-};
+} as never as Gage;
 
 describe("gageDetailsOptions — x-axis prediction window padding", () => {
   it("extends xAxis.max by 6 hours when isNow=true and predictedPoints exist", () => {
@@ -36,7 +37,7 @@ describe("gageDetailsOptions — x-axis prediction window padding", () => {
       range,
       t
     );
-    const xAxis = result.xAxis as any;
+    const xAxis = result.xAxis as Highcharts.XAxisOptions;
     expect(xAxis.max).toBe(range.chartEndDate.add(PREDICTION_WINDOW_MINUTES, "m").valueOf());
   });
 
@@ -48,7 +49,7 @@ describe("gageDetailsOptions — x-axis prediction window padding", () => {
       range,
       t
     );
-    const xAxis = result.xAxis as any;
+    const xAxis = result.xAxis as Highcharts.XAxisOptions;
     expect(xAxis.max).toBe(range.chartEndDate.valueOf());
   });
 
@@ -60,7 +61,7 @@ describe("gageDetailsOptions — x-axis prediction window padding", () => {
       range,
       t
     );
-    const xAxis = result.xAxis as any;
+    const xAxis = result.xAxis as Highcharts.XAxisOptions;
     expect(xAxis.max).toBe(range.chartEndDate.valueOf());
   });
 });

@@ -1,14 +1,14 @@
-import { Map, Marker, useMap } from "@vis.gl/react-maplibre";
-import { useMemo } from "react";
 import { InternalGageMapProps } from "@models/MapModels";
-import { StyleSheet } from "react-native";
-import "maplibre-gl/dist/maplibre-gl.css";
-import TrendIcon, { TREND_ICON_TYPES } from "./TrendIcon";
-import Config from "../config/config";
+import { Map, Marker } from "@vis.gl/react-maplibre";
 import Constants from "expo-constants";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { useMemo } from "react";
+import { StyleSheet } from "react-native";
+import Config from "../config/config";
+import TrendIcon, { TREND_ICON_TYPES } from "./TrendIcon";
 
 const mapStyleBaseUrl =
-  Constants.expoConfig.extra.mapTileUrlBase || Config.DEFAULT_MAP_TILE_BASE_URL;
+  Constants.expoConfig?.extra?.mapTileUrlBase || Config.DEFAULT_MAP_TILE_BASE_URL;
 
 const styles = StyleSheet.create({
   map: {
@@ -52,8 +52,6 @@ const MapLibreWebGageWebMap = ({
     return url + region.id + "/webstyles";
   }, [region]);
 
-  const { current: map } = useMap();
-
   const markers = useMemo(() => {
     return gages.map(
       (g, index) =>
@@ -72,7 +70,7 @@ const MapLibreWebGageWebMap = ({
           </Marker>
         )
     );
-  }, [map, gages]);
+  }, [gages, onGagePress]);
 
   const regionBounds: [number, number, number, number] = useMemo(() => {
     if (region && region.regionBounds) {

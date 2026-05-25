@@ -35,3 +35,7 @@ docs
 
 expo-env.d.ts
 # @end expo-cli
+
+.github/*
+AGENTS.md
+DELEGATION_PROTOCOL.md

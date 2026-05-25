@@ -1,29 +1,29 @@
-import React, { useMemo, useState } from "react";
-import { ErrorBoundaryProps, Redirect, Stack, useRouter } from "expo-router";
 import { useGoBack } from "@utils/useGoBack";
+import { ErrorBoundaryProps, Redirect, useRouter } from "expo-router";
 import { observer } from "mobx-react-lite";
+import React, { useMemo, useState } from "react";
 
+import { Card, CardContent, CardFooter } from "@common-ui/components/Card";
+import { Cell, RowOrCell, Separator, Spacer } from "@common-ui/components/Common";
+import { Input } from "@common-ui/components/Input";
 import { Content, Screen } from "@common-ui/components/Screen";
 import { MediumText, RegularText } from "@common-ui/components/Text";
-import { ErrorDetails } from "@components/ErrorDetails";
-import { Cell, RowOrCell, Separator, Spacer } from "@common-ui/components/Common";
 import { Spacing } from "@common-ui/constants/spacing";
+import { ErrorDetails } from "@components/ErrorDetails";
 import TitleWithBackButton from "@components/TitleWithBackButton";
 import { ROUTES } from "app/_layout";
-import { Card, CardContent, CardFooter } from "@common-ui/components/Card";
-import { Input } from "@common-ui/components/Input";
 
-import { useValidations } from "@utils/useValidations";
-import { useStores } from "@models/helpers/useStores";
 import { LinkButton, SimpleLinkButton, SolidButton } from "@common-ui/components/Button";
-import { Colors } from "@common-ui/constants/colors";
 import { If, Ternary } from "@common-ui/components/Conditional";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
 import SuccessMessage from "@common-ui/components/SuccessMessage";
+import { Colors } from "@common-ui/constants/colors";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
-import { Alert } from "react-native";
 import { isMobile } from "@common-ui/utils/responsive";
+import { useStores } from "@models/helpers/useStores";
+import { useValidations } from "@utils/useValidations";
 import Head from "expo-router/head";
+import { Alert } from "react-native";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -43,9 +43,9 @@ const ProfileScreen = observer(function ProfileScreen() {
   const { t } = useLocale();
   const { authSessionStore } = useStores();
 
-  const [email, setEmail] = useState(authSessionStore.userEmail);
-  const [firstName, setFirstName] = useState(authSessionStore.userFirstName);
-  const [lastName, setLastName] = useState(authSessionStore.userLastName);
+  const [email, setEmail] = useState(authSessionStore.userEmail ?? "");
+  const [firstName, setFirstName] = useState(authSessionStore.userFirstName ?? "");
+  const [lastName, setLastName] = useState(authSessionStore.userLastName ?? "");
 
   const [submitted, setSubmitted] = useState(false);
 

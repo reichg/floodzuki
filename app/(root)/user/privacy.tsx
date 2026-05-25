@@ -1,17 +1,18 @@
+/* eslint-disable react/no-unescaped-entities */
+import { ErrorBoundaryProps, useRouter } from "expo-router";
 import React from "react";
-import { ErrorBoundaryProps, Stack, useRouter } from "expo-router";
 
-import { Screen, Content } from "@common-ui/components/Screen";
-import { HugeTitle, MediumTitle, RegularText } from "@common-ui/components/Text";
 import { IconButton, SimpleLinkButton } from "@common-ui/components/Button";
-import { openLinkInBrowser } from "@utils/navigation";
-import { ErrorDetails } from "@components/ErrorDetails";
 import { Row, Spacer } from "@common-ui/components/Common";
-import { Spacing } from "@common-ui/constants/spacing";
-import { isMobile } from "@common-ui/utils/responsive";
 import { If } from "@common-ui/components/Conditional";
-import { ROUTES } from "app/_layout";
+import { Content, Screen } from "@common-ui/components/Screen";
+import { HugeTitle, MediumTitle, RegularText } from "@common-ui/components/Text";
+import { Spacing } from "@common-ui/constants/spacing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { isMobile } from "@common-ui/utils/responsive";
+import { ErrorDetails } from "@components/ErrorDetails";
+import { openLinkInBrowser } from "@utils/navigation";
+import { ROUTES } from "app/_layout";
 import Head from "expo-router/head";
 
 // We use this to wrap each screen with an error boundary

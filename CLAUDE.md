@@ -50,7 +50,7 @@ Automated checks: `npm test` (Jest 29 via `jest-expo` preset, `@testing-library/
 Create a `.env` file or pass inline:
 
 ```bash
-BUILD_ENV="local" SENTRY_AUTH_TOKEN="" GOOGLE_AUTH_CLIENT_SECRET="" GOOGLE_RECAPTCH_SITE_KEY="" GOOGLE_AUTH_EXPO_ID="" GOOGLE_AUTH_WEB_ID="" GOOGLE_AUTH_IOS_ID="" GOOGLE_AUTH_ANDROID_ID="" GOOGLE_MAPS_IOS_API_KEY="" GOOGLE_MAPS_ANDROID_API_KEY="" GOOGLE_MAPS_WEB_API_KEY="" npx expo start
+BUILD_ENV="local" SENTRY_AUTH_TOKEN="" GOOGLE_RECAPTCH_SITE_KEY="" GOOGLE_AUTH_EXPO_ID="" GOOGLE_AUTH_WEB_ID="" GOOGLE_AUTH_IOS_ID="" GOOGLE_AUTH_ANDROID_ID="" GOOGLE_MAPS_IOS_API_KEY="" GOOGLE_MAPS_ANDROID_API_KEY="" GOOGLE_MAPS_WEB_API_KEY="" npx expo start
 ```
 
 Google Auth only works in the browser via secure tunnel:

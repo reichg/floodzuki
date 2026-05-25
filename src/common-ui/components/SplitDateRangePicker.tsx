@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Platform, View, ViewStyle } from "react-native";
-import { Dayjs } from "dayjs";
-import localDayJs from "@services/localDayJs";
-import { applyRangeRules } from "@common-ui/utils/dateRangeRules";
+import { Cell } from "@common-ui/components/Common";
+import Icon from "@common-ui/components/Icon";
 import { SingleDatePicker } from "@common-ui/components/SingleDatePicker";
 import { SingleDatePickerNative } from "@common-ui/components/SingleDatePickerNative";
-import Icon from "@common-ui/components/Icon";
 import { RegularText } from "@common-ui/components/Text";
-import { Cell } from "@common-ui/components/Common";
 import { Colors } from "@common-ui/constants/colors";
 import { Spacing } from "@common-ui/constants/spacing";
+import { applyRangeRules } from "@common-ui/utils/dateRangeRules";
 import Config from "@config/config";
+import localDayJs from "@services/localDayJs";
+import { Dayjs } from "dayjs";
+import React, { useEffect, useMemo, useState } from "react";
+import { Platform, View, ViewStyle } from "react-native";
 
 export type SplitDateRangePickerProps = {
   startDate: Dayjs;
@@ -45,11 +45,11 @@ export const SplitDateRangePicker = (props: SplitDateRangePickerProps) => {
 
   useEffect(() => {
     setStart(startDate);
-  }, [startDate.valueOf()]);
+  }, [startDate]);
 
   useEffect(() => {
     setEnd(endDate);
-  }, [endDate.valueOf()]);
+  }, [endDate]);
 
   // ---------------------------------------------------------------------------
   // Bounds

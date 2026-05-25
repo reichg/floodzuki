@@ -1,19 +1,19 @@
-import React, { useEffect } from "react";
-import { observer } from "mobx-react-lite";
 import { useRouter } from "expo-router";
+import { observer } from "mobx-react-lite";
+import React, { useEffect } from "react";
 
 import { Cell } from "@common-ui/components/Common";
-import { useStores } from "@models/helpers/useStores";
-import { ROUTES } from "app/_layout";
 import { If } from "@common-ui/components/Conditional";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
-import { useGoogleAuth } from "@common-ui/contexts/GoogleAuthContext";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
-import { ActivityIndicator, Pressable, ViewStyle } from "react-native";
 import { MediumText } from "@common-ui/components/Text";
 import { Colors } from "@common-ui/constants/colors";
 import { Spacing } from "@common-ui/constants/spacing";
+import { useGoogleAuth } from "@common-ui/contexts/GoogleAuthContext";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { useStores } from "@models/helpers/useStores";
+import { ROUTES } from "app/_layout";
 import { Image } from "expo-image";
+import { ActivityIndicator, Pressable, ViewStyle } from "react-native";
 
 const GoogleSigninButton = observer(function GoogleSigninButton() {
   const { authSessionStore } = useStores();
@@ -21,19 +21,22 @@ const GoogleSigninButton = observer(function GoogleSigninButton() {
   const router = useRouter();
   const googleAuth = useGoogleAuth();
 
+  const authorizeUser = React.useCallback(
+    async (idToken: string) => {
+      await authSessionStore.processGoogleToken({ idToken });
+
+      if (!authSessionStore.isError) {
+        router.push({ pathname: ROUTES.UserAlerts });
+      }
+    },
+    [authSessionStore, router]
+  );
+
   useEffect(() => {
     if (!!googleAuth.idToken) {
       authorizeUser(googleAuth.idToken);
     }
-  }, [googleAuth.idToken]);
-
-  const authorizeUser = async (idToken: string) => {
-    await authSessionStore.processGoogleToken({ idToken });
-
-    if (!authSessionStore.isError) {
-      router.push({ pathname: ROUTES.UserAlerts });
-    }
-  };
+  }, [authorizeUser, googleAuth.idToken]);
 
   const loadingText = "Loading...";
   const buttonText = googleAuth.isLoading ? loadingText : t("googlesigninButton.title");

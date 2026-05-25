@@ -1,17 +1,13 @@
-import React, { useEffect } from "react";
-import { Pressable, useColorScheme } from "react-native";
-import { usePathname, Slot, Link, Tabs } from "expo-router";
 import { Image } from "expo-image";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Link, Slot, Tabs, usePathname } from "expo-router";
+import React, { useEffect } from "react";
+import { Pressable } from "react-native";
 
 import "@expo/match-media";
 
+import { Cell, Row, RowOrCell, Separator } from "@common-ui/components/Common";
 import { If, Ternary } from "@common-ui/components/Conditional";
-import { Colors } from "@common-ui/constants/colors";
-import { Spacing } from "@common-ui/constants/spacing";
-import { MainRoute, ROUTES, routes } from "app/_layout";
-import { useStores } from "@models/helpers/useStores";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Icon from "@common-ui/components/Icon";
 import {
   LabelText,
   LargeTitle,
@@ -20,17 +16,20 @@ import {
   SmallText,
   TinyText,
 } from "@common-ui/components/Text";
-import { Cell, Row, RowOrCell, Separator } from "@common-ui/components/Common";
-import Icon from "@common-ui/components/Icon";
-import { isWeb, useResponsive } from "@common-ui/utils/responsive";
-import { openLinkInBrowser } from "@utils/navigation";
+import { Colors } from "@common-ui/constants/colors";
+import { Spacing } from "@common-ui/constants/spacing";
 import { useAppAssets } from "@common-ui/contexts/AssetsContext";
-import { useRegisterPushNotificationsListener } from "@services/usePushNotificationsListener";
-import { useCheckForUpdates } from "@services/expoUpdates";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { isWeb, useResponsive } from "@common-ui/utils/responsive";
+import AppStoreBanner from "@components/AppStoreBanner";
 import LocaleChange from "@components/LocaleChange";
 import TasteOfTheValleyBanner from "@components/TasteOfTheValleyBanner";
-import AppStoreBanner from "@components/AppStoreBanner";
+import { useStores } from "@models/helpers/useStores";
+import { useCheckForUpdates } from "@services/expoUpdates";
+import { useRegisterPushNotificationsListener } from "@services/usePushNotificationsListener";
+import { openLinkInBrowser } from "@utils/navigation";
+import { MainRoute, ROUTES, routes } from "app/_layout";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const GAGE_ICONS = {
   active: require("@assets/images/floodzuki.png"),
@@ -52,7 +51,7 @@ export default function AppLayout() {
     };
 
     getAllData();
-  }, [store.authSessionStore.isLoggedIn]);
+  }, [store, store.authSessionStore.isLoggedIn]);
 
   // Check for updates
   // Disable updates check due to bug in Expo

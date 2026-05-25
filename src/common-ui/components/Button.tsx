@@ -1,19 +1,19 @@
 import React, { forwardRef } from "react";
 import {
+  ActivityIndicator,
   ColorValue,
+  Pressable,
+  TextStyle,
   TouchableOpacityProps,
   ViewStyle,
-  TextStyle,
-  ActivityIndicator,
-  Pressable,
 } from "react-native";
 
 import { Feather } from "@expo/vector-icons";
 import { MediumText, RegularText } from "./Text";
 
+import { If } from "@common-ui/components/Conditional";
 import { Colors, ColorTypes } from "@common-ui/constants/colors";
 import { Spacing } from "@common-ui/constants/spacing";
-import { If } from "@common-ui/components/Conditional";
 import { OffsetProps, useOffsetStyles } from "@common-ui/utils/useOffset";
 
 type SimpleLinkProps = {
@@ -168,7 +168,12 @@ function BaseButton(props: BaseButtonProps) {
         isButtonDisabled && $buttonDisabled,
       ]}>
       <If condition={!!leftIcon}>
-        <Feather size={leftIconSize} name={leftIcon} color={textColor} style={$leftIcon as any} />
+        <Feather
+          size={leftIconSize}
+          name={leftIcon}
+          color={textColor}
+          style={$leftIcon as TextStyle}
+        />
       </If>
       <If condition={!!isLoading}>
         <ActivityIndicator size="small" color={textColor} style={$activityIndicator} />
@@ -184,7 +189,7 @@ function BaseButton(props: BaseButtonProps) {
           size={rightIconSize}
           name={rightIcon}
           color={textColor}
-          style={$rightIcon as any}
+          style={$rightIcon as TextStyle}
         />
       </If>
     </Pressable>

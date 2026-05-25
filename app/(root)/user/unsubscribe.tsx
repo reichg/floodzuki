@@ -1,23 +1,23 @@
+import { ErrorBoundaryProps, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ErrorBoundaryProps, Stack, useLocalSearchParams, useRouter } from "expo-router";
 
-import { Screen, Content } from "@common-ui/components/Screen";
-import { MediumText, RegularText } from "@common-ui/components/Text";
-import { ErrorDetails } from "@components/ErrorDetails";
-import TitleWithBackButton from "@components/TitleWithBackButton";
-import { ROUTES } from "app/_layout";
-import { Spacing } from "@common-ui/constants/spacing";
+import { OutlinedButton, SimpleLinkButton, SolidButton } from "@common-ui/components/Button";
 import { Card, CardContent } from "@common-ui/components/Card";
 import { Cell, Row } from "@common-ui/components/Common";
-import { OutlinedButton, SimpleLinkButton, SolidButton } from "@common-ui/components/Button";
-import { observer } from "mobx-react-lite";
-import { useStores } from "@models/helpers/useStores";
 import { If, Ternary } from "@common-ui/components/Conditional";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
-import { normalizeSearchParams, openLinkInBrowser } from "@utils/navigation";
+import { Content, Screen } from "@common-ui/components/Screen";
 import SuccessMessage from "@common-ui/components/SuccessMessage";
+import { MediumText, RegularText } from "@common-ui/components/Text";
+import { Spacing } from "@common-ui/constants/spacing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { ErrorDetails } from "@components/ErrorDetails";
+import TitleWithBackButton from "@components/TitleWithBackButton";
+import { useStores } from "@models/helpers/useStores";
+import { normalizeSearchParams, openLinkInBrowser } from "@utils/navigation";
+import { ROUTES } from "app/_layout";
 import Head from "expo-router/head";
+import { observer } from "mobx-react-lite";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -48,7 +48,7 @@ const UnsubscribeScreen = observer(function UnsubscribeScreen() {
     if (!userId || !email) {
       router.replace({ pathname: ROUTES.Home });
     }
-  }, [router]);
+  }, [authSessionStore, email, router, userId]);
 
   const goBack = () => {
     router.push({ pathname: ROUTES.UserAlerts });

@@ -15,6 +15,22 @@ module.exports = defineConfig([
     },
   },
   {
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-restricted-types": [
+        "error",
+        {
+          types: {
+            unknown: {
+              message: 'Use a specific type instead of "unknown".',
+            },
+          },
+        },
+      ],
+    },
+  },
+  {
     ignores: ["node_modules/", "dist/", ".expo/", "ios/", "android/", "patches/"],
   },
 ]);

@@ -1,7 +1,7 @@
+import { Href, useNavigation, useRouter } from "expo-router";
 import { useCallback } from "react";
-import { useNavigation, useRouter } from "expo-router";
 
-export function useGoBack(fallbackPathname: string): () => void {
+export function useGoBack(fallbackPathname: Href): () => void {
   const navigation = useNavigation();
   const router = useRouter();
 
@@ -9,7 +9,7 @@ export function useGoBack(fallbackPathname: string): () => void {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      router.push({ pathname: fallbackPathname as any });
+      router.push(fallbackPathname);
     }
   }, [navigation, router, fallbackPathname]);
 }

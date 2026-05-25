@@ -1,7 +1,22 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // src/components/__tests__/GageDetailsChart.range-shortcut.test.tsx
+import type { Gage } from "@models/Gage";
+import { act, render } from "@testing-library/react-native";
 import React from "react";
-import { render, act } from "@testing-library/react-native";
 import { GageDetailsChart } from "../GageDetailsChart";
+
+type MockChildrenProps = {
+  children?: React.ReactNode;
+};
+
+type MockConditionalProps = {
+  condition?: boolean;
+  children?: React.ReactNode;
+};
+
+type MockSegmentControlProps = {
+  onChange: (key: string) => void;
+};
 
 // --- Mocks ---
 const mockParamsBox: { current: { from?: string; to?: string; historicEventId?: string } } = {
@@ -11,7 +26,7 @@ const mockSetParams = jest.fn();
 
 let capturedRangeOnChange: ((key: string) => void) | undefined;
 jest.mock("@common-ui/components/SegmentControl", () => ({
-  SegmentControl: ({ onChange }: any) => {
+  SegmentControl: ({ onChange }: MockSegmentControlProps) => {
     capturedRangeOnChange = onChange;
     return null;
   },
@@ -55,7 +70,7 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 jest.mock("@gorhom/bottom-sheet", () => ({
   BottomSheetModal: () => null,
-  BottomSheetView: ({ children }: any) => children,
+  BottomSheetView: ({ children }: MockChildrenProps) => children ?? null,
 }));
 jest.mock("@react-native-picker/picker", () => {
   function PickerMock() {
@@ -71,20 +86,22 @@ jest.mock("../DatePickerVariantSwitch", () => () => null);
 jest.mock("@common-ui/components/Icon", () => () => null);
 jest.mock("@common-ui/components/Card", () => {
   const React = require("react");
-  const Pass = ({ children }: any) => React.createElement(React.Fragment, null, children ?? null);
+  const Pass = ({ children }: MockChildrenProps) =>
+    React.createElement(React.Fragment, null, children ?? null);
   return { Card: Pass, CardHeader: Pass, CardFooter: Pass };
 });
 jest.mock("@common-ui/components/Common", () => {
   const React = require("react");
-  const Pass = ({ children }: any) => React.createElement(React.Fragment, null, children ?? null);
+  const Pass = ({ children }: MockChildrenProps) =>
+    React.createElement(React.Fragment, null, children ?? null);
   return { Row: Pass, Cell: Pass, RowOrCell: Pass };
 });
 jest.mock("@common-ui/components/Conditional", () => {
   const React = require("react");
   return {
-    If: ({ condition, children }: any) =>
+    If: ({ condition, children }: MockConditionalProps) =>
       condition ? React.createElement(React.Fragment, null, children) : null,
-    Ternary: ({ condition, children }: any) => {
+    Ternary: ({ condition, children }: MockConditionalProps) => {
       const arr = React.Children.toArray(children);
       return condition ? arr[0] ?? null : arr[1] ?? null;
     },
@@ -108,7 +125,7 @@ jest.mock("@config/config", () => ({
   default: { LIVE_CHART_DATA_REFRESH_INTERVAL: 60000, GAGES_WITHOUT_DISHCARGE: [] },
 }));
 
-const mockGage: any = {
+const mockGage = {
   locationId: "USGS-NF10",
   locationInfo: {
     floodEvents: [],
@@ -129,7 +146,7 @@ const mockGage: any = {
   predictedPoints: [],
   noaaForecastData: [],
   hasData: false,
-};
+} as never as Gage;
 
 describe("GageDetailsChart — segment shortcut behavior", () => {
   beforeEach(() => {

@@ -8,6 +8,7 @@
     "test": "TZ=UTC jest",
     "test:ist": "TZ=Asia/Kolkata jest",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "lint:fix": "eslint . --fix",
     "prepare": "husky"
   },

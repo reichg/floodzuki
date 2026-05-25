@@ -1,25 +1,25 @@
-import React, { useEffect, useRef, useState } from "react";
-import { ErrorBoundaryProps, Redirect, Stack, useRouter } from "expo-router";
+import { ErrorBoundaryProps, Redirect, useRouter } from "expo-router";
 import { observer } from "mobx-react-lite";
+import React, { useEffect, useRef, useState } from "react";
 
-import { Screen, Content } from "@common-ui/components/Screen";
-import { MediumText } from "@common-ui/components/Text";
-import { ErrorDetails } from "@components/ErrorDetails";
-import TitleWithBackButton from "@components/TitleWithBackButton";
-import { ROUTES } from "app/_layout";
-import { Spacing } from "@common-ui/constants/spacing";
-import { Card, CardContent, CardFooter } from "@common-ui/components/Card";
-import { Cell, Row, RowOrCell } from "@common-ui/components/Common";
-import { Input } from "@common-ui/components/Input";
-import CheckBoxItem from "@common-ui/components/CheckBoxItem";
 import { OutlinedButton, SolidButton } from "@common-ui/components/Button";
-import { useStores } from "@models/helpers/useStores";
+import { Card, CardContent, CardFooter } from "@common-ui/components/Card";
+import CheckBoxItem from "@common-ui/components/CheckBoxItem";
+import { Cell, Row, RowOrCell } from "@common-ui/components/Common";
 import { If } from "@common-ui/components/Conditional";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
-import Config from "@config/config";
-import GoogleSigninButton from "@components/GoogleSigninButton";
+import { Input } from "@common-ui/components/Input";
+import { Content, Screen } from "@common-ui/components/Screen";
+import { MediumText } from "@common-ui/components/Text";
+import { Spacing } from "@common-ui/constants/spacing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
 import { AppleSigninButton } from "@components/AppleSigninButton";
+import { ErrorDetails } from "@components/ErrorDetails";
+import GoogleSigninButton from "@components/GoogleSigninButton";
+import TitleWithBackButton from "@components/TitleWithBackButton";
+import Config from "@config/config";
+import { useStores } from "@models/helpers/useStores";
+import { ROUTES } from "app/_layout";
 import Head from "expo-router/head";
 
 // We use this to wrap each screen with an error boundary
@@ -32,7 +32,7 @@ const NewScreen = observer(function NewScreen() {
   const { t } = useLocale();
   const { authSessionStore } = useStores();
 
-  const recaptcha = useRef(null);
+  const recaptcha = useRef<{ reset: () => void } | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -47,7 +47,7 @@ const NewScreen = observer(function NewScreen() {
   // Clear any errors when the screen is loaded
   useEffect(() => {
     authSessionStore.clearDataFetching();
-  }, []);
+  }, [authSessionStore]);
 
   useEffect(() => {
     let isValid = true;
@@ -71,7 +71,7 @@ const NewScreen = observer(function NewScreen() {
     }
 
     setIsValid(isValid);
-  }, [firstName, lastName, email, password, passwordConfirmation]);
+  }, [email, firstName, lastName, password, passwordConfirmation, t]);
 
   // If the user is already logged in, redirect them to the home screen
   if (authSessionStore.isLoggedIn) {

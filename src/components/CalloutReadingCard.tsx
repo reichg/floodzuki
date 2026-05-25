@@ -1,23 +1,23 @@
-import React from "react";
-import { ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { observer } from "mobx-react-lite";
+import React from "react";
+import { ActivityIndicator } from "react-native";
 
 import { Card, CardHeader, CardItem } from "@common-ui/components/Card";
 import { Cell, Row } from "@common-ui/components/Common";
 import { LabelText, MediumText, RegularText, SmallTitle } from "@common-ui/components/Text";
 
-import { Gage, STATUSES } from "@models/Gage";
-import localDayJs from "@services/localDayJs";
 import { If } from "@common-ui/components/Conditional";
-import { useStores } from "@models/helpers/useStores";
-import { formatReadingTime } from "@utils/useTimeFormat";
-import { useUtils, isNullish } from "@utils/utils";
 import { LargeLabel } from "@common-ui/components/Label";
-import TrendIcon, { TREND_ICON_TYPES } from "@components/TrendIcon";
 import { Spacing } from "@common-ui/constants/spacing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import TrendIcon, { TREND_ICON_TYPES } from "@components/TrendIcon";
 import { TxKeyPath } from "@i18n/i18n";
+import { Gage, STATUSES } from "@models/Gage";
+import { useStores } from "@models/helpers/useStores";
+import localDayJs from "@services/localDayJs";
+import { formatReadingTime } from "@utils/useTimeFormat";
+import { isNullish, useUtils } from "@utils/utils";
 
 const CalloutReading = observer(function CalloutReadingCard({ gage }: { gage: Gage }) {
   const { gagesStore, getTimezone } = useStores();
@@ -34,6 +34,7 @@ const CalloutReading = observer(function CalloutReadingCard({ gage }: { gage: Ga
   const label = isNow ? t("calloutReading.lastReading") : t("calloutReading.peak");
 
   const roadStatus = gage?.getCalculatedRoadStatus(gage?.waterLevel);
+  const floodLevel = status?.floodLevel;
 
   const timeAgo =
     isNow && reading?.timestamp
@@ -58,7 +59,7 @@ const CalloutReading = observer(function CalloutReadingCard({ gage }: { gage: Ga
             {timeAgo}
             {" / "}
           </If>
-          {formatReadingTime(reading?.timestamp, tz)}
+          {reading?.timestamp ? formatReadingTime(reading.timestamp, tz) : ""}
         </LabelText>
       </CardHeader>
       <Cell flex>
@@ -76,7 +77,10 @@ const CalloutReading = observer(function CalloutReadingCard({ gage }: { gage: Ga
         </If>
         <CardItem noBorder={!hasRoadInfo && !hasTrendInfo}>
           <RegularText>{t("calloutReading.status")}</RegularText>
-          <LargeLabel type={STATUSES[status?.floodLevel]} text={status?.floodLevel} />
+          <LargeLabel
+            type={floodLevel ? STATUSES[floodLevel] : undefined}
+            text={floodLevel ?? ""}
+          />
         </CardItem>
         <If condition={hasTrendInfo}>
           <CardItem noBorder={!hasRoadInfo}>

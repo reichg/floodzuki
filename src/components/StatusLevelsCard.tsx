@@ -1,6 +1,6 @@
-import React from "react";
-import { observer } from "mobx-react-lite";
 import { useRouter } from "expo-router";
+import { observer } from "mobx-react-lite";
+import React from "react";
 
 import { LinkButton } from "@common-ui/components/Button";
 import { Card, CardFooter, CardHeader, CardItem } from "@common-ui/components/Card";
@@ -8,11 +8,11 @@ import { Cell } from "@common-ui/components/Common";
 import { If } from "@common-ui/components/Conditional";
 import { LargeLabel } from "@common-ui/components/Label";
 import { RegularText, SmallText, SmallTitle } from "@common-ui/components/Text";
-import { Gage } from "@models/Gage";
-import { useUtils } from "@utils/utils";
-import { useStores } from "@models/helpers/useStores";
-import { ROUTES } from "app/_layout";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { Gage } from "@models/Gage";
+import { useStores } from "@models/helpers/useStores";
+import { useUtils } from "@utils/utils";
+import { ROUTES } from "app/_layout";
 
 const formatToRoadText = (diff: number, t) => {
   if (Math.abs(diff) < 0.1) {
@@ -71,8 +71,8 @@ const StatusLevelsCard = observer(function StatusLevelsCard({ gage }: { gage: Ga
           <RegularText>
             {t("statusLevelsCard.atAndAbove")} {formatHeight(gage?.yellowStage)}
             {"\n"}
-            <If condition={!!gage?.roadSaddleHeight}>
-              <SmallText>{formatToRoadText(gage?.roadToYellowStage, t)}</SmallText>
+            <If condition={gage?.roadToYellowStage != null}>
+              <SmallText>{formatToRoadText(gage?.roadToYellowStage ?? 0, t)}</SmallText>
             </If>
           </RegularText>
         </CardItem>
@@ -81,8 +81,8 @@ const StatusLevelsCard = observer(function StatusLevelsCard({ gage }: { gage: Ga
           <RegularText>
             {t("statusLevelsCard.atAndAbove")} {formatHeight(gage?.redStage)}
             {"\n"}
-            <If condition={!!gage?.roadSaddleHeight}>
-              <SmallText>{formatToRoadText(gage?.roadToRedStage, t)}</SmallText>
+            <If condition={gage?.roadToRedStage != null}>
+              <SmallText>{formatToRoadText(gage?.roadToRedStage ?? 0, t)}</SmallText>
             </If>
           </RegularText>
         </CardItem>

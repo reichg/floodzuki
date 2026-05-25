@@ -1,12 +1,12 @@
-import { Instance, SnapshotIn, SnapshotOut, types, flow } from "mobx-state-tree";
 import { api } from "@services/api";
 import dayjs from "dayjs";
+import { flow, Instance, SnapshotIn, SnapshotOut, types } from "mobx-state-tree";
 
-import { dataFetchingProps, withDataFetchingActions } from "./helpers/withDataFetchingProps";
+import { ChartColorsHex } from "@common-ui/constants/colors";
 import Config from "@config/config";
+import { dataFetchingProps, withDataFetchingActions } from "./helpers/withDataFetchingProps";
 import { LocationInfoModel } from "./LocationInfo";
 import { GageSummary } from "./RootStore";
-import { ChartColorsHex } from "@common-ui/constants/colors";
 
 // "Forecast" Example data
 // dischargeStageOne: 16500
@@ -68,7 +68,7 @@ import { ChartColorsHex } from "@common-ui/constants/colors";
 //   }
 // ]
 
-const DataPointModel = types.model("DataPoint").props({
+export const DataPointModel = types.model("DataPoint").props({
   reading: types.maybe(types.number),
   waterDischarge: types.maybe(types.number),
   timestamp: types.maybe(types.frozen()), // dayjs instance
@@ -240,22 +240,22 @@ const ForecastModel = types
       get maxReading() {
         const dataPoints = store?.dataPoints;
 
-        if (!dataPoints) {
+        if (!dataPoints.length) {
           return null;
         }
 
         const cutoff = dayjs().subtract(24, "hours").valueOf();
         let maxReading = dataPoints[0];
-        let max = maxReading?.waterDischarge;
+        let max = maxReading?.waterDischarge ?? Number.NEGATIVE_INFINITY;
 
         for (let i = 1; i < dataPoints.length; i++) {
           const reading = dataPoints[i];
 
-          if (reading.timestampMs < cutoff) {
+          if (reading.timestampMs === undefined || reading.timestampMs < cutoff) {
             break;
           }
 
-          if (reading.waterDischarge > max) {
+          if (reading.waterDischarge !== undefined && reading.waterDischarge > max) {
             maxReading = reading;
             max = reading.waterDischarge;
           }
@@ -418,13 +418,13 @@ export const ForecastStoreModel = types
     },
   }));
 
-export interface ForecastStore extends Instance<typeof ForecastStoreModel> {}
-export interface ForecastStoreSnapshot extends SnapshotOut<typeof ForecastStoreModel> {}
+export type ForecastStore = Instance<typeof ForecastStoreModel>;
+export type ForecastStoreSnapshot = SnapshotOut<typeof ForecastStoreModel>;
 
-export interface Forecast extends Instance<typeof ForecastModel> {}
-export interface NOAAForecast extends Instance<typeof NOAAForecastModel> {}
-export interface DataPoint extends Instance<typeof DataPointModel> {}
-export interface Predictions extends Instance<typeof PredictionModel> {}
-export interface Readings extends Instance<typeof ReadingModel> {}
-export interface ForecastSnapshotOut extends SnapshotOut<typeof ForecastModel> {}
-export interface ForecastSnapshotIn extends SnapshotIn<typeof ForecastModel> {}
+export type Forecast = Instance<typeof ForecastModel>;
+export type NOAAForecast = Instance<typeof NOAAForecastModel>;
+export type DataPoint = Instance<typeof DataPointModel>;
+export type Predictions = Instance<typeof PredictionModel>;
+export type Readings = Instance<typeof ReadingModel>;
+export type ForecastSnapshotOut = SnapshotOut<typeof ForecastModel>;
+export type ForecastSnapshotIn = SnapshotIn<typeof ForecastModel>;

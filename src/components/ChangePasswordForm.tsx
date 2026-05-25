@@ -1,22 +1,22 @@
-import React, { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { LinkButton, SolidButton } from "@common-ui/components/Button";
 import { Card, CardContent, CardFooter } from "@common-ui/components/Card";
 import { If } from "@common-ui/components/Conditional";
 import { MediumText, RegularText } from "@common-ui/components/Text";
-import { useStores } from "@models/helpers/useStores";
 import { Spacing } from "@common-ui/constants/spacing";
+import { useStores } from "@models/helpers/useStores";
 
-import ErrorMessage from "@common-ui/components/ErrorMessage";
-import SuccessMessage from "@common-ui/components/SuccessMessage";
 import { Cell, RowOrCell } from "@common-ui/components/Common";
+import ErrorMessage from "@common-ui/components/ErrorMessage";
 import { Input } from "@common-ui/components/Input";
-import { useRouter } from "expo-router";
-import { ROUTES } from "app/_layout";
-import { useValidations } from "@utils/useValidations";
-import Config from "@config/config";
+import SuccessMessage from "@common-ui/components/SuccessMessage";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import Config from "@config/config";
+import { useValidations } from "@utils/useValidations";
+import { ROUTES } from "app/_layout";
+import { useRouter } from "expo-router";
 
 export type PasswordSubmitActionProps = {
   oldPassword: string;
@@ -79,7 +79,7 @@ const ChangePasswordForm = observer(function ChangePasswordForm(props: ChangePas
     if (newPassword && confirmPassword && confirmPassword !== newPassword) {
       setPasswordError(t("validations.passwordsDontMatch"));
     }
-  }, [oldPassword, newPassword, confirmPassword, showOldPasswordForm]);
+  }, [confirmPassword, newPassword, t]);
 
   const onSumbit = () => {
     if (!isValid || passwordError) {
@@ -146,10 +146,10 @@ const ChangePasswordForm = observer(function ChangePasswordForm(props: ChangePas
           </Cell>
         </RowOrCell>
         <If condition={!!error}>
-          <ErrorMessage errorText={error} />
+          <ErrorMessage errorText={error ?? ""} />
         </If>
         <If condition={!!successMessage && !error}>
-          <SuccessMessage successText={successMessage} />
+          <SuccessMessage successText={successMessage ?? ""} />
           <LinkButton
             selfAlign="center"
             title={t("changePasswordForm.proceed")}

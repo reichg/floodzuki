@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Gage, GageChartDataType } from "@models/Gage";
-import { useTimeout } from "./useTimeout";
 import { useStores } from "@models/helpers/useStores";
+import { useTimeout } from "./useTimeout";
 
-import localDayJs from "@services/localDayJs";
-import Config from "@config/config";
 import { Colors } from "@common-ui/constants/colors";
-import { DataPoint } from "@models/Forecasts";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
 import { Timing } from "@common-ui/constants/timing";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import Config from "@config/config";
+import { DataPoint } from "@models/Forecasts";
+import localDayJs from "@services/localDayJs";
 
 declare module "highcharts" {
   interface Options {
@@ -33,34 +33,77 @@ interface BuildOptionsProps {
   chartDataType: GageChartDataType;
 }
 
+type GageChartPoint = Highcharts.PointOptionsObject & {
+  x: number;
+  y: number;
+  name: string;
+  ts?: string;
+  isPrediction?: boolean;
+};
+
+type TimedPoint = DataPoint & { timestamp: Dayjs };
+type TimedReadingPoint = TimedPoint & { reading: number };
+type TimedDischargePoint = TimedPoint & { waterDischarge: number };
+
+const hasTimestamp = (point: DataPoint): point is TimedPoint => point.timestamp != null;
+
+const hasReadingPoint = (point: DataPoint): point is TimedReadingPoint => {
+  return hasTimestamp(point) && typeof point.reading === "number";
+};
+
+const hasDischargePoint = (point: DataPoint): point is TimedDischargePoint => {
+  return hasTimestamp(point) && typeof point.waterDischarge === "number";
+};
+
+const ensureXAxis = (options: Highcharts.Options) => {
+  const xAxis = (Array.isArray(options.xAxis) ? options.xAxis[0] : options.xAxis) ?? {};
+  options.xAxis = xAxis;
+  return xAxis as Highcharts.XAxisOptions;
+};
+
+const ensureYAxis = (options: Highcharts.Options) => {
+  const yAxis = (Array.isArray(options.yAxis) ? options.yAxis[0] : options.yAxis) ?? {};
+  options.yAxis = yAxis;
+  return yAxis as Highcharts.YAxisOptions;
+};
+
 const DEBUGGING_TIMESPAN_MARGIN = 0; // 300;
 const PREDICTION_WINDOW_MINUTES = 60 * 6; // 6 hours of predictions
 
 export const CHART_OPTIONS = {
   dashboardOptions: (options: Highcharts.Options, gage: Gage, range: Range, t) => {
-    const xAxis = options.xAxis as Highcharts.XAxisOptions;
-    const yAxis = options.yAxis as Highcharts.YAxisOptions;
+    const chart = options.chart ?? (options.chart = {});
+    const xAxis = ensureXAxis(options);
+    const yAxis = ensureYAxis(options);
+    const now = options._now ?? localDayJs();
 
-    options.chart.height = 182;
+    options._now = now;
+
+    chart.height = 182;
     xAxis.labels = { enabled: false };
     xAxis.tickLength = 0;
     yAxis.labels = { enabled: false };
     yAxis.gridLineWidth = 0;
-    yAxis.title = null;
+    yAxis.title = undefined;
 
     for (const line of yAxis.plotLines || []) {
-      line.label.style.fontSize = "11px";
+      if (!line.label) {
+        continue;
+      }
+
+      line.label.style = { ...(line.label.style ?? {}), fontSize: "11px" };
       line.label.align = "center";
       line.label.x = 0;
     }
 
-    xAxis.max = options._now.valueOf();
+    xAxis.max = now.valueOf();
 
-    const chartBeginTime = options._now
+    const chartBeginTime = now
       .clone()
       .subtract(Config.FRONT_PAGE_CHART_DURATION_NUMBER, Config.FRONT_PAGE_CHART_DURATION_UNIT);
 
     xAxis.min = chartBeginTime.clone().subtract(20, "m").valueOf();
+    xAxis.plotLines = xAxis.plotLines ?? [];
 
     xAxis.plotLines.push({
       value: chartBeginTime.valueOf(),
@@ -77,11 +120,11 @@ export const CHART_OPTIONS = {
   },
 
   gageDetailsOptions: (options: Highcharts.Options, gage: Gage, range: Range, t) => {
-    const xAxis = options.xAxis as Highcharts.XAxisOptions;
+    const xAxis = ensureXAxis(options);
 
     let predictionWindow = 0;
 
-    if (gage?.predictedPoints && range.isNow !== false) {
+    if (gage?.predictedPoints?.length && range.isNow !== false) {
       predictionWindow = PREDICTION_WINDOW_MINUTES;
     }
 
@@ -93,11 +136,11 @@ export const CHART_OPTIONS = {
 
     xAxis.min = range.chartStartDate.clone().subtract(DEBUGGING_TIMESPAN_MARGIN, "m").valueOf();
 
-    const crest = calculateCrest(gage?.dataPoints, {
+    const crest = calculateCrest(gage?.dataPoints ?? [], {
       startDate: range.chartStartDate,
     });
 
-    if (crest) {
+    if (crest && typeof crest.reading === "number") {
       xAxis.plotLines = xAxis.plotLines || [];
       xAxis.plotLines.push(
         makePlotLine({
@@ -116,14 +159,15 @@ function calculateCrest(
   { startDate = localDayJs("1970-01-01"), endDate = localDayJs() } = {}
 ) {
   const points = dataPoints.filter(
-    (point) => point.timestamp >= startDate && point.timestamp <= endDate
+    (point): point is TimedReadingPoint =>
+      hasReadingPoint(point) && point.timestamp >= startDate && point.timestamp <= endDate
   );
 
   if (points.length < 3) {
     return null;
   }
 
-  const [min, max] = points.reduce(
+  const [min, max] = points.reduce<[number, number]>(
     (mm, d) => [Math.min(d.reading, mm[0]), Math.max(d.reading, mm[1])],
     [+Infinity, -Infinity]
   );
@@ -159,7 +203,9 @@ function calculateCrest(
 
 function dataPointPopup(gage: Gage, t, tz: string) {
   return function (this: Highcharts.TooltipFormatterContextObject) {
-    const roadStatus = gage?.getCalculatedRoadStatus(this.y);
+    const yValue = typeof this.y === "number" ? this.y : undefined;
+    const roadStatus = yValue !== undefined ? gage?.getCalculatedRoadStatus(yValue) : null;
+    const pointTime = typeof this.x === "number" ? localDayJs(this.x).tz(tz) : null;
 
     let roadDesc = "";
 
@@ -175,11 +221,11 @@ function dataPointPopup(gage: Gage, t, tz: string) {
           this.point.isPrediction ? t("statusLevelsCard.predicted") : t("statusLevelsCard.water")
         } ${t("statusLevelsCard.level")}: </span>
         <span class="data-point-content">
-          ${this.y?.toFixed(2)} ${t("measure.ft")}.
+          ${yValue?.toFixed(2) ?? "--"} ${t("measure.ft")}.
         </span>
         <br />
         <span class="data-point-content">
-          ${localDayJs(this.x).tz(tz).format("ddd, MMM D, h:mm A")}
+          ${pointTime ? pointTime.format("ddd, MMM D, h:mm A") : ""}
         </span>
         ${roadDesc}
       </div>`;
@@ -200,121 +246,129 @@ function makePlotLine({ value, label, color = "#9a9a9a" }): Highcharts.XAxisPlot
   };
 }
 
-function createPredictionSeries(dataPoints: DataPoint[], t, groundHeight: number, color: string) {
+function createPredictionSeries(
+  dataPoints: DataPoint[],
+  t,
+  groundHeight: number,
+  color: string
+): Highcharts.SeriesAreaOptions {
   return {
+    type: "area",
     animation: false,
     name: "predicted gage height",
-    data: dataPoints.map((d) => ({
-      x: d.timestamp.valueOf(),
-      y: d.reading,
-      name: `${t("statusLevelsCard.predicted")} ${t("statusLevelsCard.level")}: `,
-      isPrediction: true,
-    })),
-    fillOpacity: 0,
-    color: color,
-    threshold: groundHeight || 0,
-    lineWidth: 1,
-    states: {
-      hover: {
-        lineWidth: 1,
-      },
-    },
-  };
-}
-
-function createActualDataSeries(dataPoints: DataPoint[], t, groundHeight: number, color: string) {
-  return {
-    animation: false,
-    name: "actual gage height",
-    data: dataPoints.map((d) => ({
-      x: d.timestamp.valueOf(),
-      y: d.reading,
-      ts: d.timestamp,
-      name: `${t("statusLevelsCard.water")} ${t("statusLevelsCard.level")}: `,
-      isPrediction: false,
-    })),
-    fillOpacity: 0,
-    color: color,
-    threshold: groundHeight || 0,
-    lineWidth: 1,
-    states: {
-      hover: {
-        lineWidth: 1,
-      },
-    },
-  };
-}
-
-function createForecastDataSeries(dataPoints: DataPoint[], t, groundHeight: number, color: string) {
-  return {
-    animation: false,
-    name: "forecast gage height",
-    data: dataPoints.map((d) => ({
-      x: d.timestamp.valueOf(),
-      y: d.reading,
-      name: `${t("statusLevelsCard.predicted")} ${t("statusLevelsCard.level")}: `,
-      isPrediction: true,
-    })),
-    fillOpacity: 0,
-    color: color,
-    threshold: groundHeight || 0,
-    lineWidth: 1,
-    states: {
-      hover: {
-        lineWidth: 1,
-      },
-    },
-  };
-}
-
-function createSeriesAndReturnMin(dataPoints, gage, t, color, setIsPrediction, chartDataType) {
-  let data = null;
-  let min = Math.min.apply(
-    null,
-    dataPoints.map((d) => d.reading)
-  );
-
-  if (setIsPrediction) {
-    if (chartDataType === GageChartDataType.DISCHARGE) {
-      data = dataPoints.map((d) => ({
-        x: d.timestamp.valueOf(),
-        y: d.waterDischarge,
-        name: `${t("statusLevelsCard.water")} ${t("statusLevelsCard.level")}: `,
-        ts: d.timestamp?.format(),
-        isPrediction: false,
-      }));
-    } else {
-      data = dataPoints.map((d) => ({
+    data: dataPoints.filter(hasReadingPoint).map(
+      (d): GageChartPoint => ({
         x: d.timestamp.valueOf(),
         y: d.reading,
-        name: `${t("statusLevelsCard.water")} ${t("statusLevelsCard.level")}: `,
-        ts: d.timestamp?.format(),
-        isPrediction: false,
-      }));
-    }
-  } else {
-    if (chartDataType === GageChartDataType.DISCHARGE) {
-      data = dataPoints.map((d) => {
-        return {
-          x: d.timestamp.valueOf(),
-          y: d.waterDischarge,
-          name: `${t("statusLevelsCard.predicted")} ${t("statusLevelsCard.level")}: `,
-        };
-      });
-    } else {
-      data = dataPoints.map((d) => {
-        return {
-          x: d.timestamp.valueOf(),
-          y: d.reading,
-          name: `${t("statusLevelsCard.predicted")} ${t("statusLevelsCard.level")}: `,
-        };
-      });
-    }
-  }
+        name: `${t("statusLevelsCard.predicted")} ${t("statusLevelsCard.level")}: `,
+        isPrediction: true,
+      })
+    ),
+    fillOpacity: 0,
+    color: color,
+    threshold: groundHeight || 0,
+    lineWidth: 1,
+    states: {
+      hover: {
+        lineWidth: 1,
+      },
+    },
+  };
+}
 
-  const series = [];
+function createActualDataSeries(
+  dataPoints: DataPoint[],
+  t,
+  groundHeight: number,
+  color: string
+): Highcharts.SeriesAreaOptions {
+  return {
+    type: "area",
+    animation: false,
+    name: "actual gage height",
+    data: dataPoints.filter(hasReadingPoint).map(
+      (d): GageChartPoint => ({
+        x: d.timestamp.valueOf(),
+        y: d.reading,
+        ts: d.timestamp.format(),
+        name: `${t("statusLevelsCard.water")} ${t("statusLevelsCard.level")}: `,
+        isPrediction: false,
+      })
+    ),
+    fillOpacity: 0,
+    color: color,
+    threshold: groundHeight || 0,
+    lineWidth: 1,
+    states: {
+      hover: {
+        lineWidth: 1,
+      },
+    },
+  };
+}
+
+function createForecastDataSeries(
+  dataPoints: DataPoint[],
+  t,
+  groundHeight: number,
+  color: string
+): Highcharts.SeriesAreaOptions {
+  return {
+    type: "area",
+    animation: false,
+    name: "forecast gage height",
+    data: dataPoints.filter(hasReadingPoint).map(
+      (d): GageChartPoint => ({
+        x: d.timestamp.valueOf(),
+        y: d.reading,
+        name: `${t("statusLevelsCard.predicted")} ${t("statusLevelsCard.level")}: `,
+        isPrediction: true,
+      })
+    ),
+    fillOpacity: 0,
+    color: color,
+    threshold: groundHeight || 0,
+    lineWidth: 1,
+    states: {
+      hover: {
+        lineWidth: 1,
+      },
+    },
+  };
+}
+
+function createSeriesAndReturnMin(
+  dataPoints: DataPoint[],
+  gage: Gage,
+  t,
+  color: string,
+  setIsPrediction: boolean,
+  chartDataType: GageChartDataType
+): readonly [Highcharts.SeriesAreaOptions[], number] {
+  const validPoints =
+    chartDataType === GageChartDataType.DISCHARGE
+      ? dataPoints.filter(hasDischargePoint)
+      : dataPoints.filter(hasReadingPoint);
+
+  const values = validPoints.map((point) =>
+    chartDataType === GageChartDataType.DISCHARGE ? point.waterDischarge : point.reading
+  );
+  const min = values.length > 0 ? Math.min(...values) : 0;
+
+  const data: GageChartPoint[] = validPoints.map((point) => ({
+    x: point.timestamp.valueOf(),
+    y: chartDataType === GageChartDataType.DISCHARGE ? point.waterDischarge : point.reading,
+    name: `${t(setIsPrediction ? "statusLevelsCard.water" : "statusLevelsCard.predicted")} ${t(
+      "statusLevelsCard.level"
+    )}: `,
+    ts: setIsPrediction ? point.timestamp.format() : undefined,
+    isPrediction: !setIsPrediction,
+  }));
+
+  const series: Highcharts.SeriesAreaOptions[] = [];
 
   series.push({
+    type: "area",
     animation: false,
     name: "gage height",
     data: data,
@@ -340,20 +394,20 @@ function createSeriesAndReturnMin(dataPoints, gage, t, color, setIsPrediction, c
     },
   });
 
-  return [series, min];
+  return [series, min] as const;
 }
 
 function createDataAndReturnMin(gage: Gage, chartDataType: GageChartDataType, t) {
   let hasPredictions = false;
-  const chartData = [];
+  const chartData: Highcharts.SeriesAreaOptions[] = [];
 
   // Get predicted points
-  if (gage?.predictedPoints.length > 0) {
+  if (gage?.predictedPoints?.length > 0) {
     chartData.push(
       createPredictionSeries(
-        gage?.predictedPoints,
+        gage.predictedPoints,
         t,
-        gage?.groundHeight,
+        gage.groundHeight,
         Colors.gageChartPredictionsLineColor
       )
     );
@@ -361,31 +415,31 @@ function createDataAndReturnMin(gage: Gage, chartDataType: GageChartDataType, t)
   }
 
   // Get actual points
-  if (gage?.actualPoints.length > 0) {
+  if (gage?.actualPoints?.length > 0) {
     chartData.push(
       createActualDataSeries(
-        gage?.actualPoints,
+        gage.actualPoints,
         t,
-        gage?.groundHeight,
+        gage.groundHeight,
         Colors.gageChartActualDataLineColor
       )
     );
   }
 
   // Get forecast points
-  if (gage?.noaaForecastData.length > 0) {
+  if (gage?.noaaForecastData?.length > 0) {
     chartData.push(
       createForecastDataSeries(
-        gage?.noaaForecastData,
+        gage.noaaForecastData,
         t,
-        gage?.groundHeight,
+        gage.groundHeight,
         Colors.gageChartForecastDataLineColor
       )
     );
   }
 
   // Get readings
-  const dataPoints = gage?.dataPoints;
+  const dataPoints = gage.dataPoints;
 
   let min = 0;
 
@@ -412,7 +466,7 @@ function createDataAndReturnMin(gage: Gage, chartDataType: GageChartDataType, t)
 
   if (deletedReadings.length > 0) {
     const [deletedReadingsSeries, deletedSeriesMin] = createSeriesAndReturnMin(
-      dataPoints,
+      deletedReadings,
       gage,
       t,
       Colors.gageChartDeletedLineColor,
@@ -438,7 +492,7 @@ const buildBasicOptions = (props: BuildOptionsProps, t) => {
       animation: false,
     },
     title: {
-      text: null,
+      text: undefined,
     },
     time: {
       timezone: props.timezone,
@@ -485,42 +539,45 @@ const buildBasicOptions = (props: BuildOptionsProps, t) => {
 
   const [series, minVal] = createDataAndReturnMin(gage, chartDataType, t);
 
-  const { yMaximum, yMinimum } = gage?.getChartMinAndMax(chartDataType);
+  const { yMaximum, yMinimum } = gage.getChartMinAndMax(chartDataType);
 
   options.series = series;
   const yAxis = options.yAxis as Highcharts.YAxisOptions;
   const xAxis = options.xAxis as Highcharts.XAxisOptions;
-  const yAxisMin = Math.max(gage?.groundHeight || 0, yMinimum);
+  const yAxisMin = Math.max(gage.groundHeight || 0, yMinimum);
   yAxis.min = Math.min(minVal, yAxisMin);
   yAxis.max = yMaximum;
 
-  yAxis.plotLines = (gage?.roads).map((cat) => {
-    return {
-      value: cat.elevation,
-      label: {
-        text: cat.name,
-        style: {
-          color: Colors.primary,
-          fontFamily: "'Open Sans', sans-serif",
-          fontSize: "14px",
+  yAxis.plotLines = gage.roads
+    .filter((cat): cat is { elevation: number; name: string } => {
+      return cat.elevation != null && typeof cat.name === "string";
+    })
+    .map((cat) => {
+      return {
+        value: cat.elevation,
+        label: {
+          text: cat.name,
+          style: {
+            color: Colors.primary,
+            fontFamily: "'Open Sans', sans-serif",
+            fontSize: "14px",
+          },
+          align: "right",
+          x: -10,
         },
-        align: "right",
-        x: -10,
-      },
-      color: Colors.primary,
-      dashStyle: "Dot" as Highcharts.DashStyleValue,
-    };
-  });
+        color: Colors.primary,
+        dashStyle: "Dot" as Highcharts.DashStyleValue,
+      };
+    });
 
   options._now = localDayJs();
 
-  xAxis.plotLines = [];
-  xAxis.plotLines.push(
+  xAxis.plotLines = [
     makePlotLine({
       value: options._now.valueOf(),
       label: t("gageChart.Now"),
-    })
-  );
+    }),
+  ];
 
   return options;
 };
@@ -533,52 +590,80 @@ const useGageChartOptions = (
 ) => {
   const rootStore = useStores();
   const { t } = useLocale();
+  const timezone = rootStore.getTimezone();
 
   const [isVisible, setIsVisible] = useState(false);
-  const [options, setOptions] = useState<[Highcharts.Options, DataPoint]>([{}, null]);
+  const [options, setOptions] = useState<[Highcharts.Options, DataPoint | null]>([{}, null]);
+  const gageRef = useRef(gage);
+
+  useEffect(() => {
+    gageRef.current = gage;
+  }, [gage]);
 
   // Move chart calculations to the next tick to prevent blocking the UI
   useTimeout(() => {
     setIsVisible(true);
   }, Timing.instant);
 
-  const getOptions = () => {
-    return CHART_OPTIONS[optionType](
-      buildBasicOptions(
-        {
-          timezone: rootStore.getTimezone(),
-          gage,
-          chartDataType,
-        },
-        t
-      ),
-      gage,
-      range,
-      t
-    );
-  };
+  const chartInputSignature = useMemo(
+    () =>
+      JSON.stringify({
+        actualPoints: gage?.actualPoints,
+        dataPoints: gage?.dataPoints,
+        dischargeMax: gage?.locationInfo?.dischargeMax,
+        dischargeMin: gage?.locationInfo?.dischargeMin,
+        groundHeight: gage?.groundHeight,
+        locationId: gage?.locationId,
+        noaaForecastData: gage?.noaaForecastData,
+        predictedPoints: gage?.predictedPoints,
+        roads: gage?.roads,
+        timezone,
+        yMax: gage?.locationInfo?.yMax,
+        yMin: gage?.locationInfo?.yMin,
+      }),
+    [
+      gage?.actualPoints,
+      gage?.dataPoints,
+      gage?.locationInfo?.dischargeMax,
+      gage?.locationInfo?.dischargeMin,
+      gage?.groundHeight,
+      gage?.locationId,
+      gage?.noaaForecastData,
+      gage?.predictedPoints,
+      gage?.roads,
+      timezone,
+      gage?.locationInfo?.yMax,
+      gage?.locationInfo?.yMin,
+    ]
+  );
 
   useEffect(() => {
-    if (!isVisible) {
+    if (!isVisible || !chartInputSignature) {
       return;
     }
 
-    if (!gage?.locationId) {
+    const currentGage = gageRef.current;
+
+    if (!currentGage?.locationId) {
       return;
     }
 
-    setOptions(getOptions());
-  }, [
-    isVisible,
-    gage?.locationId,
-    optionType,
-    chartDataType,
-    range,
-    gage?.dataPoints,
-    gage?.actualPoints,
-    gage?.predictedPoints,
-    gage?.noaaForecastData,
-  ]);
+    setOptions(
+      CHART_OPTIONS[optionType](
+        buildBasicOptions(
+          {
+            timezone,
+            gage: currentGage,
+            chartDataType,
+          },
+          t
+        ),
+        currentGage,
+        range,
+        t
+      )
+    );
+  }, [chartDataType, chartInputSignature, isVisible, optionType, range, t, timezone]);
 
   return options;
 };

@@ -1,8 +1,8 @@
-import React from "react";
+import type { HighchartsReactNativeProps } from "./HighchartsReactNative";
 
 // Exporting empty module for Web
 
-const HighchartsReactNative = (props: any) => {
+const HighchartsReactNative = (_props: HighchartsReactNativeProps) => {
   return null;
 };
 

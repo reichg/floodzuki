@@ -1,26 +1,26 @@
-import React from "react";
-import { ErrorBoundaryProps, Redirect, Stack, useRouter } from "expo-router";
 import * as Application from "expo-application";
+import { ErrorBoundaryProps, Redirect, Stack, useRouter } from "expo-router";
+import React from "react";
 
-import { Screen, Content } from "@common-ui/components/Screen";
-import { LabelText, LargeTitle, RegularText } from "@common-ui/components/Text";
-import { ErrorDetails } from "@components/ErrorDetails";
-import { Cell, Row, Spacer } from "@common-ui/components/Common";
-import { Spacing } from "@common-ui/constants/spacing";
-import { Card, CardListLinkItem } from "@common-ui/components/Card";
-import { openLinkInBrowser } from "@utils/navigation";
-import Config from "@config/config";
-import { ROUTES } from "app/_layout";
 import { OutlinedButton, SimpleLinkButton } from "@common-ui/components/Button";
+import { Card, CardListLinkItem } from "@common-ui/components/Card";
+import { Cell, Row } from "@common-ui/components/Common";
+import { Content, Screen } from "@common-ui/components/Screen";
+import { LabelText, LargeTitle, RegularText } from "@common-ui/components/Text";
 import { Colors } from "@common-ui/constants/colors";
+import { Spacing } from "@common-ui/constants/spacing";
+import { ErrorDetails } from "@components/ErrorDetails";
+import Config from "@config/config";
+import { openLinkInBrowser } from "@utils/navigation";
+import { ROUTES } from "app/_layout";
 
-import { isWeb } from "@common-ui/utils/responsive";
 import { Ternary } from "@common-ui/components/Conditional";
-import { useStores } from "@models/helpers/useStores";
-import { observer } from "mobx-react-lite";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { isWeb } from "@common-ui/utils/responsive";
 import LocaleChange from "@components/LocaleChange";
+import { useStores } from "@models/helpers/useStores";
 import Head from "expo-router/head";
+import { observer } from "mobx-react-lite";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {

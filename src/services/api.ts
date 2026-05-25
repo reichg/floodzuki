@@ -5,14 +5,18 @@
  * See the [Backend API Integration](https://github.com/infinitered/ignite/blob/master/docs/Backend-API-Integration.md)
  * documentation for more details.
  */
-import { ApiResponse, ApisauceInstance, create } from "apisauce";
 import Config from "@config/config";
-import { GeneralApiProblem, getGeneralApiProblem } from "./apiProblem";
+import { ApiResponse, ApisauceInstance, create } from "apisauce";
+import { ApiProblemData, GeneralApiProblem, getGeneralApiProblem } from "./apiProblem";
 
 interface ApiConfig {
   url: string; // The URL of the api.
   timeout: number; // Milliseconds before we timeout the request.
 }
+
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
+type RequestParams = { [key: string]: JsonValue } | string;
 
 export type LogInParams = {
   username: string;
@@ -116,14 +120,14 @@ async function genericRequest<T>(
   requestType: "get" | "post" | "put" | "delete",
   api: ApisauceInstance,
   url: string,
-  params?: { [key: string]: any } | string
+  params?: RequestParams
 ): Promise<{ kind: "ok"; data: T } | GeneralApiProblem> {
   const response: ApiResponse<T> = await api[requestType](url, params);
 
   if (!response.ok) {
-    const problem = getGeneralApiProblem(response);
-    if (problem) {
-      return problem;
+    const normalizedProblem = getGeneralApiProblem(response as ApiResponse<ApiProblemData>);
+    if (normalizedProblem) {
+      return normalizedProblem;
     }
 
     return { kind: "bad-data", data: null };
@@ -131,6 +135,10 @@ async function genericRequest<T>(
 
   try {
     const rawData = response.data;
+
+    if (rawData === undefined) {
+      return { kind: "bad-data", data: null };
+    }
 
     return { kind: "ok", data: rawData };
   } catch (e) {
@@ -145,24 +153,16 @@ async function genericRequest<T>(
 async function genericGetRequest<T>(
   api: ApisauceInstance,
   url: string,
-  params?: { [key: string]: any }
+  params?: Exclude<RequestParams, string>
 ) {
   return await genericRequest<T>("get", api, url, params);
 }
 
-async function genericPostRequest<T>(
-  api: ApisauceInstance,
-  url: string,
-  params?: { [key: string]: any } | string
-) {
+async function genericPostRequest<T>(api: ApisauceInstance, url: string, params?: RequestParams) {
   return await genericRequest<T>("post", api, url, JSON.stringify(params));
 }
 
-async function genericPutRequest<T>(
-  api: ApisauceInstance,
-  url: string,
-  params?: { [key: string]: any } | string
-) {
+async function genericPutRequest<T>(api: ApisauceInstance, url: string, params?: RequestParams) {
   return await genericRequest<T>("put", api, url, params);
 }
 

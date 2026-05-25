@@ -1,21 +1,20 @@
+import { observer } from "mobx-react-lite";
 import React, { useState } from "react";
 import { ActivityIndicator } from "react-native";
-import { observer } from "mobx-react-lite";
 
 import HighchartsReactNative from "@services/highcharts/HighchartsReactNative";
 import LocalHighchartsReact from "@services/highcharts/LocalHighchartsReact";
 
-import { GageSummary } from "@models/RootStore";
-import { If, Ternary } from "@common-ui/components/Conditional";
-import { isMobile, isWeb } from "@common-ui/utils/responsive";
 import { Card } from "@common-ui/components/Card";
+import { If, Ternary } from "@common-ui/components/Conditional";
 import { Spacing } from "@common-ui/constants/spacing";
+import { isMobile, isWeb } from "@common-ui/utils/responsive";
+import { GageSummary } from "@models/RootStore";
 
-import useForecastOptions from "@utils/useForecastOptions";
 import { Cell } from "@common-ui/components/Common";
 import { SegmentControl } from "@common-ui/components/SegmentControl";
-import { useStores } from "@models/helpers/useStores";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import useForecastOptions from "@utils/useForecastOptions";
 import { CHART_HEIGHT } from "./forecastChartConstants";
 
 interface ForecastChartProps {
@@ -76,8 +75,9 @@ export const ForecastChart = observer(function ForecastChart(props: ForecastChar
   const { gages } = props;
 
   const [range, setRange] = useState("DF");
+  const ranges = RANGES(t);
 
-  const selectedRange = RANGES(t).find((r) => r.key === range);
+  const selectedRange = ranges.find((r) => r.key === range) ?? ranges[0];
 
   const chartOptions = useForecastOptions(gages, selectedRange.before, selectedRange.after);
   const isLoading = !chartOptions?.series?.length;
@@ -85,7 +85,7 @@ export const ForecastChart = observer(function ForecastChart(props: ForecastChar
   return (
     <>
       <If condition={isWeb}>
-        <SegmentControl segments={RANGES(t)} selectedSegment={range} onChange={setRange} />
+        <SegmentControl segments={ranges} selectedSegment={range} onChange={setRange} />
       </If>
       <Card
         innerHorizontal={Spacing.extraSmall}
@@ -100,7 +100,7 @@ export const ForecastChart = observer(function ForecastChart(props: ForecastChar
       </Card>
       <If condition={isMobile}>
         <Cell top={Spacing.medium}>
-          <SegmentControl segments={RANGES(t)} selectedSegment={range} onChange={setRange} />
+          <SegmentControl segments={ranges} selectedSegment={range} onChange={setRange} />
         </Cell>
       </If>
     </>

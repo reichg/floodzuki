@@ -1,35 +1,35 @@
+import { ErrorBoundaryProps, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ErrorBoundaryProps, Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 
-import { Screen, Content } from "@common-ui/components/Screen";
-import { LabelText, RegularLargeText, RegularText, SmallTitle } from "@common-ui/components/Text";
-import { ErrorDetails } from "@components/ErrorDetails";
-import TitleWithBackButton from "@components/TitleWithBackButton";
-import { Card, CardContent, CardFooter, CardHeader } from "@common-ui/components/Card";
 import {
   LinkButton,
   OutlinedButton,
   SimpleLinkButton,
   SolidButton,
 } from "@common-ui/components/Button";
-import { openLinkInBrowser } from "@utils/navigation";
-import { Spacing } from "@common-ui/constants/spacing";
+import { Card, CardContent, CardFooter, CardHeader } from "@common-ui/components/Card";
 import CheckBoxItem from "@common-ui/components/CheckBoxItem";
+import { Content, Screen } from "@common-ui/components/Screen";
+import { LabelText, RegularLargeText, RegularText, SmallTitle } from "@common-ui/components/Text";
+import { Spacing } from "@common-ui/constants/spacing";
+import { ErrorDetails } from "@components/ErrorDetails";
+import TitleWithBackButton from "@components/TitleWithBackButton";
+import { openLinkInBrowser } from "@utils/navigation";
 
-import { ROUTES } from "app/_layout";
-import Config from "@config/config";
 import { Cell, Row, RowOrCell } from "@common-ui/components/Common";
-import { useStores } from "@models/helpers/useStores";
-import { Colors } from "@common-ui/constants/colors";
-import { observer } from "mobx-react-lite";
 import { If, Ternary } from "@common-ui/components/Conditional";
-import { isIOS, isWeb } from "@common-ui/utils/responsive";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
-import { Gage } from "@models/Gage";
-import { Switch } from "react-native";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
-import Head from "expo-router/head";
 import { FLink } from "@common-ui/components/FLink";
+import { Colors } from "@common-ui/constants/colors";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { isIOS, isWeb } from "@common-ui/utils/responsive";
+import Config from "@config/config";
+import { Gage } from "@models/Gage";
+import { useStores } from "@models/helpers/useStores";
+import { ROUTES } from "app/_layout";
+import Head from "expo-router/head";
+import { observer } from "mobx-react-lite";
+import { Switch } from "react-native";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -49,11 +49,18 @@ const AlertSettingsCard = observer(function AlertSettings() {
   const emailAlertsEnabled = authSessionStore.userSettings?.notifyViaEmail;
   const smsAlertsEnabled = authSessionStore.userSettings?.notifyViaSms;
 
+  const currentSettings = {
+    notifyViaEmail: authSessionStore.userSettings?.notifyViaEmail ?? false,
+    notifyViaSms: authSessionStore.userSettings?.notifyViaSms ?? false,
+    notifyForecastAlerts: authSessionStore.userSettings?.notifyForecastAlerts ?? false,
+    notifyDailyForecasts: authSessionStore.userSettings?.notifyDailyForecasts ?? false,
+  };
+
   const updateEmailAlertsEnabled = async (value: boolean) => {
     setIsUpdatingEmail(true);
 
     await authSessionStore.updateSettings({
-      ...authSessionStore.userSettings,
+      ...currentSettings,
       notifyViaEmail: value,
     });
 
@@ -64,7 +71,7 @@ const AlertSettingsCard = observer(function AlertSettings() {
     setIsUpdatingSms(true);
 
     await authSessionStore.updateSettings({
-      ...authSessionStore.userSettings,
+      ...currentSettings,
       notifyViaSms: value,
     });
 
@@ -196,11 +203,18 @@ const ForecastsCard = observer(function ForecastsCard() {
   const dailyForecastsEnabled = authSessionStore.userSettings?.notifyDailyForecasts;
   const forecastsEnabled = authSessionStore.userSettings?.notifyForecastAlerts;
 
+  const currentSettings = {
+    notifyViaEmail: authSessionStore.userSettings?.notifyViaEmail ?? false,
+    notifyViaSms: authSessionStore.userSettings?.notifyViaSms ?? false,
+    notifyForecastAlerts: authSessionStore.userSettings?.notifyForecastAlerts ?? false,
+    notifyDailyForecasts: authSessionStore.userSettings?.notifyDailyForecasts ?? false,
+  };
+
   const updateForecastsEnabled = async (value: boolean) => {
     setIsUpdatingForecast(true);
 
     await authSessionStore.updateSettings({
-      ...authSessionStore.userSettings,
+      ...currentSettings,
       notifyForecastAlerts: value,
     });
 
@@ -211,7 +225,7 @@ const ForecastsCard = observer(function ForecastsCard() {
     setIsUpdatingDailyForecast(true);
 
     await authSessionStore.updateSettings({
-      ...authSessionStore.userSettings,
+      ...currentSettings,
       notifyDailyForecasts: value,
     });
 
@@ -254,19 +268,22 @@ const GageCheckboxItem = observer(function GageCheckboxItem({ gage }: { gage: Ga
 
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const updateGageEnabled = React.useCallback(
+    async (value: boolean) => {
+      setIsUpdating(true);
+
+      await authSessionStore.setGageSubscription(gage.locationId, value);
+
+      setIsUpdating(false);
+    },
+    [authSessionStore, gage.locationId]
+  );
+
   useEffect(() => {
     if (add && add === gage.locationId) {
       updateGageEnabled(true);
     }
-  }, [add]);
-
-  const updateGageEnabled = async (value: boolean) => {
-    setIsUpdating(true);
-
-    await authSessionStore.setGageSubscription(gage.locationId, value);
-
-    setIsUpdating(false);
-  };
+  }, [add, gage.locationId, updateGageEnabled]);
 
   const isSubscribed = (authSessionStore.gageSubscriptions ?? []).includes(gage.locationId);
   const { isLoggedIn, isNotificationsEnabled } = authSessionStore;
@@ -319,7 +336,7 @@ const AlertsScreen = observer(function AlertsScreen() {
 
     authSessionStore.getSettings();
     authSessionStore.getSubscribedGages();
-  }, []);
+  }, [authSessionStore]);
 
   const goBack = () => {
     router.push({ pathname: ROUTES.About });

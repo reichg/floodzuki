@@ -1,19 +1,19 @@
-import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { AbsoluteContainer, Cell, Row, Separator } from "./Common";
-import { Dayjs } from "dayjs";
-import localDayJs from "@services/localDayJs";
-import { ScrollView } from "react-native-gesture-handler";
-import { SmallTitle, RegularText } from "./Text";
-import { Spacing } from "@common-ui/constants/spacing";
-import { If, Ternary } from "./Conditional";
-import { Platform, Pressable, View, ViewStyle, useWindowDimensions } from "react-native";
 import { Colors } from "@common-ui/constants/colors";
-import { SegmentControl } from "./SegmentControl";
-import { Card } from "./Card";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
+import { Spacing } from "@common-ui/constants/spacing";
 import { useDatePicker } from "@common-ui/contexts/DatePickerContext";
-import { measure, useAnimatedRef } from "react-native-reanimated";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
+import localDayJs from "@services/localDayJs";
+import { Dayjs } from "dayjs";
+import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { Platform, Pressable, View, ViewStyle, useWindowDimensions } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+import { measure, useAnimatedRef } from "react-native-reanimated";
+import { Card } from "./Card";
+import { AbsoluteContainer, Cell, Row, Separator } from "./Common";
+import { If, Ternary } from "./Conditional";
+import { SegmentControl } from "./SegmentControl";
+import { RegularText, SmallTitle } from "./Text";
 
 /**
  * A DatePicker component with a calendar and a range support
@@ -82,14 +82,17 @@ const pressableStyle = (state) => [
 ];
 
 // organize the days into 5 rows
-const daysRows: number[][] = DAYS.reduce((acc, day, index) => {
-  const rowIndex = Math.floor(index / 7);
-  if (!acc[rowIndex]) {
-    acc[rowIndex] = [];
-  }
-  acc[rowIndex].push(day);
-  return acc;
-}, []);
+const daysRows: (number | undefined)[][] = DAYS.reduce<(number | undefined)[][]>(
+  (acc, day, index) => {
+    const rowIndex = Math.floor(index / 7);
+    if (!acc[rowIndex]) {
+      acc[rowIndex] = [];
+    }
+    acc[rowIndex].push(day);
+    return acc;
+  },
+  []
+);
 
 const Days = ({ onSelect }: { onSelect: (day: number) => void }) => {
   return (
@@ -99,7 +102,9 @@ const Days = ({ onSelect }: { onSelect: (day: number) => void }) => {
           {row.map((day, keyIndex) => (
             <Cell flex align="center" key={`${day}_${keyIndex}`}>
               <Ternary condition={!!day}>
-                <Pressable style={pressableStyle} onPress={() => onSelect(day)}>
+                <Pressable
+                  style={pressableStyle}
+                  onPress={() => day !== undefined && onSelect(day)}>
                   <Cell>
                     <RegularText text={String(day)} />
                   </Cell>
@@ -115,7 +120,7 @@ const Days = ({ onSelect }: { onSelect: (day: number) => void }) => {
 };
 
 // organize the months into 4 rows
-const monthRows: number[][] = MONTHS.reduce((acc, month, index) => {
+const monthRows: number[][] = MONTHS.reduce<number[][]>((acc, month, index) => {
   const rowIndex = Math.floor(index / 3);
   if (!acc[rowIndex]) {
     acc[rowIndex] = [];
@@ -168,9 +173,9 @@ const Years = ({
 
   const allYears = useMemo(() => [...years, ...offsetYears], [years, offsetYears]);
 
-  const rows: number[][] = useMemo(
+  const rows: (number | undefined)[][] = useMemo(
     () =>
-      allYears.reduce((acc, year, index) => {
+      allYears.reduce<(number | undefined)[][]>((acc, year, index) => {
         const rowIndex = Math.floor(index / 4);
         if (!acc[rowIndex]) {
           acc[rowIndex] = [];
@@ -189,7 +194,9 @@ const Years = ({
             {row.map((year, keyIndex) => (
               <Cell flex align="center" key={`${year}_${keyIndex}`}>
                 <Ternary condition={!!year}>
-                  <Pressable style={pressableStyle} onPress={() => onSelect(year)}>
+                  <Pressable
+                    style={pressableStyle}
+                    onPress={() => year !== undefined && onSelect(year)}>
                     <RegularText text={String(year)} />
                   </Pressable>
                   <Cell />
@@ -210,7 +217,7 @@ const DatePicker = (props: DatePickerProps) => {
 
   const [currentMode, setCurrentMode] = useState<Mode>("year");
 
-  const date = useRef<Dayjs | undefined>(selectedDate.clone());
+  const date = useRef<Dayjs>(selectedDate.clone());
 
   const onConfirm = () => {
     if (date.current.isValid()) {
@@ -305,7 +312,7 @@ const DatePickerComponent = React.forwardRef((props: DatePickerProps, ref) => {
       const { pageX, pageY } = measured;
       pickerLayout.current = { pageX, pageY };
     }
-  }, []);
+  }, [isNativeMobile, pickerRef]);
 
   const open = () => {
     if (pickerLayout.current) {

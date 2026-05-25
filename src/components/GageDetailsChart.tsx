@@ -1,41 +1,41 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { observer } from "mobx-react-lite";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
-import { observer } from "mobx-react-lite";
-import { useLocalSearchParams, useRouter } from "expo-router";
 
-import LocalHighchartsReact from "@services/highcharts/LocalHighchartsReact";
 import HighchartsReactNative from "@services/highcharts/HighchartsReactNative";
+import LocalHighchartsReact from "@services/highcharts/LocalHighchartsReact";
 
-import { Gage, GageChartDataType } from "@models/Gage";
-import { If, Ternary } from "@common-ui/components/Conditional";
-import { isAndroid, isIOS, isMobile, useResponsive } from "@common-ui/utils/responsive";
 import { Card, CardFooter, CardHeader } from "@common-ui/components/Card";
+import { If, Ternary } from "@common-ui/components/Conditional";
 import { Spacing } from "@common-ui/constants/spacing";
+import { isAndroid, isIOS, isMobile, useResponsive } from "@common-ui/utils/responsive";
+import { Gage, GageChartDataType } from "@models/Gage";
 
-import { Cell, Row } from "@common-ui/components/Common";
-import { SegmentControl } from "@common-ui/components/SegmentControl";
-import useGageChartOptions from "@utils/useGageChartOptions";
-import { UTC_ISO_FORMAT, formatUrlDate } from "@utils/urlDates";
-import { CHART_DEFAULT_RANGE_DAYS, deriveRange, NOW_LITERAL } from "@utils/deriveRange";
-import localDayJs from "@services/localDayJs";
-import { useStores } from "@models/helpers/useStores";
-import { useInterval } from "@utils/useTimeout";
-import Config from "@config/config";
 import { IconButton, SolidButton } from "@common-ui/components/Button";
-import { Colors } from "@common-ui/constants/colors";
-import { Picker } from "@react-native-picker/picker";
-import { LabelText, MediumText, RegularText, SmallerText } from "@common-ui/components/Text";
-import { FloodEvent } from "@models/LocationInfo";
-import { DataPoint } from "@models/Forecasts";
-import { formatReadingTime } from "@utils/useTimeFormat";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Cell, Row } from "@common-ui/components/Common";
 import Icon from "@common-ui/components/Icon";
-import DatePickerVariantSwitch from "./DatePickerVariantSwitch";
-import { Dayjs } from "dayjs";
-import { normalizeSearchParams } from "@utils/navigation";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { SegmentControl } from "@common-ui/components/SegmentControl";
+import { LabelText, MediumText, RegularText, SmallerText } from "@common-ui/components/Text";
+import { Colors } from "@common-ui/constants/colors";
 import { useDatePicker } from "@common-ui/contexts/DatePickerContext";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import Config from "@config/config";
+import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
+import { DataPoint } from "@models/Forecasts";
+import { useStores } from "@models/helpers/useStores";
+import { FloodEvent } from "@models/LocationInfo";
+import { Picker } from "@react-native-picker/picker";
+import localDayJs from "@services/localDayJs";
+import { CHART_DEFAULT_RANGE_DAYS, deriveRange, NOW_LITERAL } from "@utils/deriveRange";
+import { normalizeSearchParams } from "@utils/navigation";
+import { formatUrlDate, UTC_ISO_FORMAT } from "@utils/urlDates";
+import useGageChartOptions from "@utils/useGageChartOptions";
+import { formatReadingTime } from "@utils/useTimeFormat";
+import { useInterval } from "@utils/useTimeout";
+import { Dayjs } from "dayjs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import DatePickerVariantSwitch from "./DatePickerVariantSwitch";
 
 interface GageDetailsChartProps {
   gage: Gage;
@@ -223,7 +223,7 @@ const HistoricEvents = observer(function HistoricEvents({
                   <SolidButton
                     fullWidth
                     title={t("common.confirm")}
-                    onPress={() => onHistoricEventSelected(selectedEvent)}
+                    onPress={() => onHistoricEventSelected(selectedEvent ?? SELECT_EVENT)}
                   />
                 </Cell>
               </BottomSheetView>
@@ -248,12 +248,12 @@ const RateOfChange = observer(function RateOfChange({ gage }: { gage: Gage }) {
 
   // set rate of change
   let rate = gage?.predictedFeetPerHour;
-  if (rate > -0.01 && rate < 0.01) {
-    rate = null;
+  if (rate != null && rate > -0.01 && rate < 0.01) {
+    rate = undefined;
   }
 
-  const crossingTime = useMemo(() => {
-    let crossingTime = null;
+  const crossingTime = useMemo<Dayjs | null>(() => {
+    let crossingTime: Dayjs | null = null;
 
     if (!gage?.roadSaddleHeight) {
       return null;
@@ -262,8 +262,17 @@ const RateOfChange = observer(function RateOfChange({ gage }: { gage: Gage }) {
     const toGaugeTime = (s: string) => localDayJs.tz(s, "YYYY-MM-DDTHH:mm:ss", tz);
 
     for (let i = 0; i < gage.predictions?.length - 1; i++) {
-      let p = gage.predictions[i];
-      let pNext = gage.predictions[i + 1];
+      const p = gage.predictions[i];
+      const pNext = gage.predictions[i + 1];
+
+      if (
+        !p?.timestamp ||
+        !pNext?.timestamp ||
+        p.waterHeight == null ||
+        pNext.waterHeight == null
+      ) {
+        continue;
+      }
 
       if (pNext.waterHeight === gage.roadSaddleHeight) {
         crossingTime = toGaugeTime(pNext.timestamp);
@@ -283,7 +292,7 @@ const RateOfChange = observer(function RateOfChange({ gage }: { gage: Gage }) {
     }
 
     return crossingTime;
-  }, [gage?.locationId, gage?.roadSaddleHeight, tz]);
+  }, [gage?.predictions, gage?.roadSaddleHeight, tz]);
 
   if (!gage?.locationId) {
     return null;
@@ -372,7 +381,7 @@ export const GageDetailsChart = observer(function GageDetailsChart(props: GageDe
       range.isNow,
       false
     );
-  }, [gage?.locationId, isDataFetched, range]);
+  }, [gage?.locationId, gagesStore, isDataFetched, range]);
 
   // Live polling while in "now" mode.
   // Each tick re-anchors the window to the current moment so the chart's
@@ -584,9 +593,9 @@ export const GageDetailsChart = observer(function GageDetailsChart(props: GageDe
         <Row align="space-between">
           <Cell />
           <Cell>
-            <CrestInfo crest={crest} />
+            {crest ? <CrestInfo crest={crest} /> : null}
             <RateOfChange gage={gage} />
-            <HistoricEvents floodEvents={gage?.locationInfo?.floodEvents} />
+            <HistoricEvents floodEvents={gage?.locationInfo?.floodEvents ?? []} />
           </Cell>
           {/* Refresh Icon */}
           <Ternary condition={isMobile}>

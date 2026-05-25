@@ -1,5 +1,5 @@
-import React from "react";
 import { observer } from "mobx-react-lite";
+import React from "react";
 
 import { Card, CardFooter } from "@common-ui/components/Card";
 import { Cell, Row, RowOrCell } from "@common-ui/components/Common";
@@ -10,18 +10,18 @@ import { DataPoint, Forecast } from "@models/Forecasts";
 import { useStores } from "@models/helpers/useStores";
 import { GageSummary } from "@models/RootStore";
 
-import { formatDateTime } from "@utils/useTimeFormat";
-import { useUtils } from "@utils/utils";
-import { Spacing } from "@common-ui/constants/spacing";
-import { Colors } from "@common-ui/constants/colors";
-import { Link } from "expo-router";
-import { ROUTES } from "app/_layout";
-import { useTimeout } from "@utils/useTimeout";
-import { Timing } from "@common-ui/constants/timing";
-import { useResponsive } from "@common-ui/utils/responsive";
 import { IconButton, LinkButton } from "@common-ui/components/Button";
-import { openLinkInBrowser } from "@utils/navigation";
+import { Colors } from "@common-ui/constants/colors";
+import { Spacing } from "@common-ui/constants/spacing";
+import { Timing } from "@common-ui/constants/timing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { useResponsive } from "@common-ui/utils/responsive";
+import { openLinkInBrowser } from "@utils/navigation";
+import { formatDateTime } from "@utils/useTimeFormat";
+import { useTimeout } from "@utils/useTimeout";
+import { useUtils } from "@utils/utils";
+import { ROUTES } from "app/_layout";
+import { Link } from "expo-router";
 
 interface GageSummaryProps {
   gage: GageSummary;
@@ -29,7 +29,7 @@ interface GageSummaryProps {
   noDetails?: boolean;
 }
 
-function ReadingRow(props: { reading?: DataPoint; delta?: number }) {
+function ReadingRow(props: { reading?: DataPoint | null; delta?: number }) {
   const { reading, delta } = props;
 
   const { formatFlow, formatFlowTrend, formatHeight } = useUtils();
@@ -136,19 +136,21 @@ export const GageSummaryCard = observer(function GageSummaryCard(props: GageSumm
         <ReadingRow reading={forecast?.latestReading} delta={forecast?.predictedCfsPerHour} />
       </Cell>
       {/* This is done for performance reason. Defer reading the expensive computation */}
-      <Ternary condition={showMaxReading}>
+      {showMaxReading && forecast ? (
         <MaxReading forecast={forecast} />
+      ) : (
         <Cell top={Spacing.small}>
           <LabelText color={Colors.success}>{t("forecastScreen.pastMax")}:</LabelText>
           <Cell height={18} />
         </Cell>
-      </Ternary>
+      )}
       <Cell top={Spacing.small}>
         <LabelText color={Colors.success}>
           {t("forecastScreen.forecastedCrests")}:
           <SmallText muted>
             {" "}
-            ({t("forecastScreen.published")} {formatDateTime(predictionTime, getTimezone())})
+            ({t("forecastScreen.published")}{" "}
+            {predictionTime ? formatDateTime(predictionTime, getTimezone()) : ""})
           </SmallText>
         </LabelText>
         {peaks?.map((peak) => (

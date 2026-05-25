@@ -1,21 +1,21 @@
-import React, { useEffect } from "react";
-import { ErrorBoundaryProps, Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { ErrorBoundaryProps, useLocalSearchParams, useRouter } from "expo-router";
 import { observer } from "mobx-react-lite";
+import React, { useEffect } from "react";
 
-import { Screen, Content } from "@common-ui/components/Screen";
-import { ErrorDetails } from "@components/ErrorDetails";
-import TitleWithBackButton from "@components/TitleWithBackButton";
-import { ROUTES } from "app/_layout";
-import { Spacing } from "@common-ui/constants/spacing";
+import { SolidButton } from "@common-ui/components/Button";
 import { Card, CardContent } from "@common-ui/components/Card";
 import { Cell } from "@common-ui/components/Common";
-import { SolidButton } from "@common-ui/components/Button";
-import { useStores } from "@models/helpers/useStores";
 import { If, Ternary } from "@common-ui/components/Conditional";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
-import { normalizeSearchParams } from "@utils/navigation";
+import { Content, Screen } from "@common-ui/components/Screen";
 import SuccessMessage from "@common-ui/components/SuccessMessage";
+import { Spacing } from "@common-ui/constants/spacing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { ErrorDetails } from "@components/ErrorDetails";
+import TitleWithBackButton from "@components/TitleWithBackButton";
+import { useStores } from "@models/helpers/useStores";
+import { normalizeSearchParams } from "@utils/navigation";
+import { ROUTES } from "app/_layout";
 import Head from "expo-router/head";
 
 // We use this to wrap each screen with an error boundary
@@ -30,9 +30,13 @@ const VerifyEmailScreen = observer(function VerifyEmailScreen() {
 
   const { userId, token } = useLocalSearchParams();
 
-  const verifyEmail = async () => {
+  const verifyEmail = React.useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
     await authSessionStore.verifyEmail({ token: normalizeSearchParams(token) });
-  };
+  }, [authSessionStore, token]);
 
   // Clear any errors when the screen is loaded
   useEffect(() => {
@@ -40,10 +44,11 @@ const VerifyEmailScreen = observer(function VerifyEmailScreen() {
 
     if (!userId || !token) {
       router.push({ pathname: ROUTES.Home });
+      return;
     }
 
     verifyEmail();
-  }, []);
+  }, [authSessionStore, router, token, userId, verifyEmail]);
 
   const goBack = () => {
     router.push({ pathname: ROUTES.UserAlerts });

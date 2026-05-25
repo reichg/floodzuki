@@ -1,15 +1,15 @@
+import * as d3 from "d3";
+import { observer } from "mobx-react-lite";
 import React, { useState } from "react";
 import { View } from "react-native";
-import { observer } from "mobx-react-lite";
 import { Circle, G, Line, Path, Svg, Text } from "react-native-svg";
-import * as d3 from "d3";
 
-import { Gage, GageChartDataType } from "@models/Gage";
-import { Colors } from "@common-ui/constants/colors";
 import { If } from "@common-ui/components/Conditional";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
-import { useTimeout } from "@utils/useTimeout";
+import { Colors } from "@common-ui/constants/colors";
 import { Timing } from "@common-ui/constants/timing";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { Gage, GageChartDataType } from "@models/Gage";
+import { useTimeout } from "@utils/useTimeout";
 
 const CHART_HEIGHT = 182;
 const OFFSET_BOTTOM = 10;
@@ -107,7 +107,7 @@ const GageListItemChart = observer(function GageListItemChart({ gage }: { gage: 
 
   const height = CHART_HEIGHT;
 
-  const [areaData, lineData, circleData, roadHeight] = useChartData(gage, layout);
+  const [areaData, , circleData, roadHeight] = useChartData(gage, layout);
 
   return (
     <View style={{ flex: 1, height: CHART_HEIGHT }} onLayout={handleLayout}>
@@ -182,7 +182,7 @@ const GageListItemChart = observer(function GageListItemChart({ gage }: { gage: 
           </If>
           <If condition={displayChart}>
             {/* Area */}
-            <If condition={isPathSafe(areaData)}>
+            <If condition={Boolean(isPathSafe(areaData))}>
               <Path
                 d={areaData}
                 strokeWidth="0"

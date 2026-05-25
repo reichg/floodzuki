@@ -1,4 +1,4 @@
-import { renderHook, act } from "@testing-library/react-native";
+import { act, renderHook } from "@testing-library/react-native";
 import { useNavigation, useRouter } from "expo-router";
 import { useGoBack } from "../useGoBack";
 
@@ -36,7 +36,7 @@ describe("useGoBack", () => {
     const { result } = renderHook(() => useGoBack("/user/profile"));
     act(() => result.current());
 
-    expect(push).toHaveBeenCalledWith({ pathname: "/user/profile" });
+    expect(push).toHaveBeenCalledWith("/user/profile");
     expect(goBack).not.toHaveBeenCalled();
   });
 

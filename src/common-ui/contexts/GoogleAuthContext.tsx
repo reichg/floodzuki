@@ -1,22 +1,24 @@
-import React, { useContext, createContext, useState, useEffect, useMemo, useCallback } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
+import { makeRedirectUri } from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
 import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import { makeRedirectUri } from "expo-auth-session";
 
 import { isAndroid, isWeb } from "@common-ui/utils/responsive";
 import { logError } from "@utils/sentry";
 
 WebBrowser.maybeCompleteAuthSession();
 
-const requestConfig: Partial<Google.GoogleAuthRequestConfig> = {
+const googleAuthExtra = Constants.expoConfig?.extra;
+
+const baseRequestConfig: Partial<Google.GoogleAuthRequestConfig> = {
   scopes: ["profile", "email"],
   selectAccount: true,
-  webClientId: Constants.expoConfig.extra.googleOAuthWebClientId,
-  androidClientId: Constants.expoConfig.extra.googleOAuthAndroidClientId,
-  iosClientId: Constants.expoConfig.extra.googleOAuthIOSClientId,
-  clientId: Constants.expoConfig.extra.googleOAuthExpoClientId,
+  webClientId: googleAuthExtra?.googleOAuthWebClientId,
+  androidClientId: googleAuthExtra?.googleOAuthAndroidClientId,
+  iosClientId: googleAuthExtra?.googleOAuthIOSClientId,
+  clientId: googleAuthExtra?.googleOAuthExpoClientId,
 };
 
 type GoogleAuthContextType = {
@@ -44,23 +46,22 @@ const GoogleAuthProviderImpl = ({ children }) => {
   const [isError, setIsError] = useState(false);
   const [idToken, setIdToken] = useState("");
 
-  if (isWeb) {
-    requestConfig.clientSecret = Constants.expoConfig.extra.googleOauthClientSecret;
-  }
+  const requestConfig = isAndroid
+    ? {
+        ...baseRequestConfig,
+        redirectUri: makeRedirectUri({
+          scheme: "com.floodzilla.floodzuki",
+          path: "user/login",
+          isTripleSlashed: true,
+        }),
+      }
+    : baseRequestConfig;
 
-  if (isAndroid) {
-    requestConfig.redirectUri = makeRedirectUri({
-      scheme: "com.floodzilla.floodzuki",
-      path: "user/login",
-      isTripleSlashed: true,
-    });
-  }
-
-  const [request, response, promptAsync] = Google.useAuthRequest(requestConfig);
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(requestConfig);
 
   useEffect(() => {
     if (response?.type === "success") {
-      const { idToken } = response?.authentication;
+      const idToken = response.params?.id_token || response.authentication?.idToken || "";
 
       setIdToken(idToken);
     } else if (response?.type === "error") {

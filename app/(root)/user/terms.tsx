@@ -1,7 +1,11 @@
+/* eslint-disable react/no-unescaped-entities */
+import { ErrorBoundaryProps, useRouter } from "expo-router";
 import React from "react";
-import { ErrorBoundaryProps, Stack, useRouter } from "expo-router";
 
-import { Screen, Content } from "@common-ui/components/Screen";
+import { IconButton, SimpleLinkButton } from "@common-ui/components/Button";
+import { Row, Spacer } from "@common-ui/components/Common";
+import { If } from "@common-ui/components/Conditional";
+import { Content, Screen } from "@common-ui/components/Screen";
 import {
   ExtraLargeTitle,
   HugeTitle,
@@ -10,18 +14,15 @@ import {
   MediumTitle,
   RegularText,
 } from "@common-ui/components/Text";
-import { IconButton, SimpleLinkButton } from "@common-ui/components/Button";
-import { openLinkInBrowser } from "@utils/navigation";
-import { ErrorDetails } from "@components/ErrorDetails";
-import { Row, Spacer } from "@common-ui/components/Common";
 import { Spacing } from "@common-ui/constants/spacing";
-import { FloodzillaLink, SVPALink } from "./privacy";
-import { ROUTES } from "app/_layout";
-import Config from "@config/config";
-import { isMobile } from "@common-ui/utils/responsive";
-import { If } from "@common-ui/components/Conditional";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { isMobile } from "@common-ui/utils/responsive";
+import { ErrorDetails } from "@components/ErrorDetails";
+import Config from "@config/config";
+import { openLinkInBrowser } from "@utils/navigation";
+import { ROUTES } from "app/_layout";
 import Head from "expo-router/head";
+import { FloodzillaLink, SVPALink } from "./privacy";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -39,7 +40,6 @@ const EmailLink = () => {
 
 export const PrivacyLink = () => {
   const router = useRouter();
-  const { t } = useLocale();
 
   const openPrivacyPolicy = () => {
     router.push({ pathname: ROUTES.Privacy });

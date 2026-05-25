@@ -1,7 +1,24 @@
-import React from "react";
-import { render, act } from "@testing-library/react-native";
+/* eslint-disable @typescript-eslint/no-require-imports */
+import { act, render } from "@testing-library/react-native";
 import dayjs, { Dayjs } from "dayjs";
+import React from "react";
 import DateRangePicker from "../DateRangePicker";
+
+type MockChildrenProps = {
+  children?: React.ReactNode;
+};
+
+type MockDatePickerHandle = {
+  open: () => void;
+  close: () => void;
+  isPickerOpen: () => boolean;
+};
+
+type MockDatePickerProps = {
+  title?: string;
+  selectedDate?: Dayjs;
+  onChange: (date: Dayjs) => void;
+};
 
 jest.mock("@common-ui/contexts/LocaleContext", () => ({
   useLocale: () => ({ t: (key: string) => key }),
@@ -16,7 +33,7 @@ jest.mock("../Text", () => ({
 jest.mock("../Common", () => {
   const React = require("react");
   return {
-    Cell: ({ children }: any) => React.createElement(React.Fragment, null, children),
+    Cell: ({ children }: MockChildrenProps) => React.createElement(React.Fragment, null, children),
   };
 });
 
@@ -24,21 +41,23 @@ jest.mock("../Common", () => {
 const pickerRegistry: Record<string, (date: Dayjs) => void> = {};
 
 jest.mock("../DatePicker", () => {
-  const React = require("react");
-  const MockDatePicker = React.forwardRef((props: any, ref: any) => {
-    const key = props.title ?? "unknown";
-    pickerRegistry[key] = props.onChange;
-    React.useImperativeHandle(ref, () => ({
-      open: jest.fn(),
-      close: jest.fn(),
-      isPickerOpen: jest.fn(() => false),
-    }));
-    return React.createElement(
-      "Text",
-      { testID: `date-picker-${key}` },
-      props.selectedDate?.format("MM/DD/YYYY") ?? ""
-    );
-  });
+  const ReactModule: typeof React = require("react");
+  const MockDatePicker = ReactModule.forwardRef<MockDatePickerHandle, MockDatePickerProps>(
+    (props, ref) => {
+      const key = props.title ?? "unknown";
+      pickerRegistry[key] = props.onChange;
+      ReactModule.useImperativeHandle(ref, () => ({
+        open: jest.fn(),
+        close: jest.fn(),
+        isPickerOpen: jest.fn(() => false),
+      }));
+      return ReactModule.createElement(
+        "Text",
+        { testID: `date-picker-${key}` },
+        props.selectedDate?.format("MM/DD/YYYY") ?? ""
+      );
+    }
+  );
   MockDatePicker.displayName = "MockDatePicker";
   return {
     __esModule: true,

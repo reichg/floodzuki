@@ -1,5 +1,9 @@
 import * as Sentry from "@sentry/react-native";
 
+type SentryExtra = Record<string, string | number | boolean | null | object>;
+
+type LoggedError = Error | string | object;
+
 export const initSentry = () => {
   Sentry.init({
     dsn: "https://7580ac526eb64f2f811ba952bb9409f1@o4505126543360000.ingest.sentry.io/4505132726681600",
@@ -7,11 +11,8 @@ export const initSentry = () => {
   });
 };
 
-export const logError = (
-  error: unknown,
-  errorInfo: string | Record<string, unknown> | null = null
-) => {
-  Sentry.captureException(error, {
-    extra: errorInfo as Record<string, unknown>,
-  });
+export const logError = (error: LoggedError, errorInfo: string | SentryExtra | null = null) => {
+  const extra = typeof errorInfo === "string" ? { context: errorInfo } : errorInfo;
+
+  Sentry.captureException(error, extra ? { extra } : undefined);
 };

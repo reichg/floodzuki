@@ -74,7 +74,7 @@ export const useInitialRootStore = (callback?: () => void | Promise<void>) => {
         _unsubscribe();
       }
     };
-  }, []);
+  }, [callback, rootStore]);
 
   return { rootStore, rehydrated };
 };

@@ -150,7 +150,6 @@ export default {
     googleOAuthAndroidClientId: process.env.GOOGLE_AUTH_ANDROID_ID,
     googleOAuthIOSClientId: process.env.GOOGLE_AUTH_IOS_ID,
     googleOAuthExpoClientId: process.env.GOOGLE_AUTH_EXPO_ID,
-    googleOauthClientSecret: process.env.GOOGLE_AUTH_CLIENT_SECRET,
   },
   owner: "floodzilla-svpa",
 };

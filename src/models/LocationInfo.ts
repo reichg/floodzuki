@@ -1,9 +1,8 @@
-import { Instance, SnapshotIn, SnapshotOut, types, flow } from "mobx-state-tree";
 import { api } from "@services/api";
+import { Instance, SnapshotIn, SnapshotOut, cast, flow, types } from "mobx-state-tree";
 
-import { withDataFetchingActions, dataFetchingProps } from "./helpers/withDataFetchingProps";
+import { dataFetchingProps, withDataFetchingActions } from "./helpers/withDataFetchingProps";
 import { withSetPropAction } from "./helpers/withSetPropsAction";
-import { GageModel } from "./Gage";
 
 // "LocationInfo" Example data
 // id: "USGS-SF17"
@@ -101,10 +100,10 @@ export const LocationInfoModelStore = types
 
       if (response.kind === "ok") {
         const metagageLocation = store.locationInfos.find((l) => l.isMetagage);
-        store.locationInfos = [
+        store.locationInfos = cast([
           ...response.data?.filter((l) => !!l.id),
           ...(metagageLocation ? [metagageLocation] : []),
-        ] as any;
+        ]);
       } else {
         store.setError(response.kind);
       }
@@ -165,9 +164,9 @@ export const LocationInfoModelStore = types
     };
   });
 
-export interface LocationInfoStore extends Instance<typeof LocationInfoModelStore> {}
-export interface LocationInfo extends Instance<typeof LocationInfoModel> {}
-export interface FloodEvent extends Instance<typeof FloodEventModel> {}
+export type LocationInfoStore = Instance<typeof LocationInfoModelStore>;
+export type LocationInfo = Instance<typeof LocationInfoModel>;
+export type FloodEvent = Instance<typeof FloodEventModel>;
 
-export interface LocationInfoSnapshotIn extends SnapshotIn<typeof LocationInfoModel> {}
-export interface LocationInfoSnapshotOut extends SnapshotOut<typeof LocationInfoModel> {}
+export type LocationInfoSnapshotIn = SnapshotIn<typeof LocationInfoModel>;
+export type LocationInfoSnapshotOut = SnapshotOut<typeof LocationInfoModel>;

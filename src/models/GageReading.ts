@@ -26,9 +26,9 @@ export const GageReadingStoreModel = types.model("GageReadingStore").props({
   readings: types.array(GageReadingModel),
 });
 
-export interface GageReadingStore extends Instance<typeof GageReadingStoreModel> {}
-export interface GageReadingStoreSnapshot extends SnapshotOut<typeof GageReadingStoreModel> {}
+export type GageReadingStore = Instance<typeof GageReadingStoreModel>;
+export type GageReadingStoreSnapshot = SnapshotOut<typeof GageReadingStoreModel>;
 
-export interface GageReading extends Instance<typeof GageReadingModel> {}
-export interface GageReadingSnapshotOut extends SnapshotOut<typeof GageReadingModel> {}
-export interface GageReadingSnapshotIn extends SnapshotIn<typeof GageReadingModel> {}
+export type GageReading = Instance<typeof GageReadingModel>;
+export type GageReadingSnapshotOut = SnapshotOut<typeof GageReadingModel>;
+export type GageReadingSnapshotIn = SnapshotIn<typeof GageReadingModel>;

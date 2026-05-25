@@ -1,15 +1,28 @@
-import { Instance, SnapshotIn, SnapshotOut, types, flow, getRoot } from "mobx-state-tree";
 import { api } from "@services/api";
 import dayjs from "dayjs";
+import { flow, getRoot, Instance, SnapshotIn, SnapshotOut, types } from "mobx-state-tree";
 
+import Config from "@config/config";
+import localDayJs from "@services/localDayJs";
+import USGS_INFO from "@utils/usgsInfo";
+import { DataPoint, NOAAForecastModel } from "./Forecasts";
 import { GageReadingModel } from "./GageReading";
 import { dataFetchingProps, withDataFetchingActions } from "./helpers/withDataFetchingProps";
 import { withSetPropAction } from "./helpers/withSetPropsAction";
-import Config from "@config/config";
 import { LocationInfoModel } from "./LocationInfo";
-import localDayJs from "@services/localDayJs";
-import { DataPoint, NOAAForecastModel } from "./Forecasts";
-import USGS_INFO from "@utils/usgsInfo";
+
+type GageApiResponse = GageSnapshotIn & {
+  locationInfo?: string | null;
+  noData?: boolean;
+};
+
+type GageStatusAndRecentReadingsResponse = {
+  gages: GageApiResponse[];
+};
+
+type RootStoreWithTimezone = {
+  getTimezone: () => string;
+};
 
 // Gage data from https://waterservices.usgs.gov/rest/IV-Service.html
 // id: "USGS-38",
@@ -122,7 +135,7 @@ export const GageModel = types
     },
 
     get riverMile() {
-      return store.locationId?.match(/[0-9]+/g)[0];
+      return store.locationId?.match(/[0-9]+/g)?.[0];
     },
 
     get gageStatus() {
@@ -184,11 +197,11 @@ export const GageModel = types
         yMaximum = 0;
 
       if (chartDataType === GageChartDataType.DISCHARGE) {
-        yMinimum = store.locationInfo?.dischargeMin;
-        yMaximum = store.locationInfo?.dischargeMax;
+        yMinimum = store.locationInfo?.dischargeMin ?? 0;
+        yMaximum = store.locationInfo?.dischargeMax ?? 0;
       } else {
-        yMinimum = store.locationInfo?.yMin;
-        yMaximum = store.locationInfo?.yMax;
+        yMinimum = store.locationInfo?.yMin ?? 0;
+        yMaximum = store.locationInfo?.yMax ?? 0;
       }
 
       return {
@@ -216,7 +229,10 @@ export const GageModel = types
         return [];
       }
 
-      return mapAndAdjustTimestampsForDisplay(store.readings, getRoot<any>(store).getTimezone());
+      return mapAndAdjustTimestampsForDisplay(
+        store.readings,
+        getRoot<RootStoreWithTimezone>(store).getTimezone()
+      );
     },
 
     get chartReadings() {
@@ -224,7 +240,7 @@ export const GageModel = types
         return [];
       }
 
-      const tz = getRoot<any>(store).getTimezone();
+      const tz = getRoot<RootStoreWithTimezone>(store).getTimezone();
       return store.readings
         .filter((reading) => !reading.isDeleted)
         .map((reading) => ({
@@ -242,7 +258,10 @@ export const GageModel = types
         let predWithNoGap = [...predictions];
         predWithNoGap.unshift(store.readings[0]);
 
-        points = mapAndAdjustTimestampsForDisplay(predWithNoGap, getRoot<any>(store).getTimezone());
+        points = mapAndAdjustTimestampsForDisplay(
+          predWithNoGap,
+          getRoot<RootStoreWithTimezone>(store).getTimezone()
+        );
       }
 
       return points;
@@ -259,14 +278,14 @@ export const GageModel = types
     get actualPoints() {
       return mapAndAdjustTimestampsForDisplay(
         store.actualReadings || [],
-        getRoot<any>(store).getTimezone()
+        getRoot<RootStoreWithTimezone>(store).getTimezone()
       );
     },
 
     get noaaForecastData() {
       return mapAndAdjustForecastTimestampsForDisplay(
         store.noaaForecast?.data || [],
-        getRoot<any>(store).getTimezone()
+        getRoot<RootStoreWithTimezone>(store).getTimezone()
       );
     },
 
@@ -278,7 +297,7 @@ export const GageModel = types
       if (
         store.yellowStage &&
         store.roadSaddleHeight &&
-        store.yellowStage.toFixed(2) !== store.redStage.toFixed(2)
+        (store.redStage == null || store.yellowStage.toFixed(2) !== store.redStage.toFixed(2))
       ) {
         return store.roadSaddleHeight - store.yellowStage;
       }
@@ -294,7 +313,7 @@ export const GageModel = types
       if (
         store.redStage &&
         store.roadSaddleHeight &&
-        store.yellowStage.toFixed(2) !== store.redStage.toFixed(2)
+        (store.yellowStage == null || store.yellowStage.toFixed(2) !== store.redStage.toFixed(2))
       ) {
         return store.roadSaddleHeight - store.redStage;
       }
@@ -343,7 +362,7 @@ export const GageStoreModel = types
         .toDate()
         .toUTCString();
 
-      const response = yield api.getStatusAndRecentReadings<{ gages: Gage[] }>(
+      const response = yield api.getStatusAndRecentReadings<GageStatusAndRecentReadingsResponse>(
         fromDateTime,
         toDateTime
       );
@@ -387,7 +406,7 @@ export const GageStoreModel = types
         return;
       }
 
-      const response = yield api.getGageReadings<Gage>(
+      const response = yield api.getGageReadings<GageApiResponse>(
         locationId,
         fromDateTime,
         toDateTime,
@@ -443,9 +462,9 @@ export const GageStoreModel = types
     },
   }));
 
-export interface GageStore extends Instance<typeof GageStoreModel> {}
-export interface GageStoreSnapshot extends SnapshotOut<typeof GageStoreModel> {}
+export type GageStore = Instance<typeof GageStoreModel>;
+export type GageStoreSnapshot = SnapshotOut<typeof GageStoreModel>;
 
-export interface Gage extends Instance<typeof GageModel> {}
-export interface GageSnapshotOut extends SnapshotOut<typeof GageModel> {}
-export interface GageSnapshotIn extends SnapshotIn<typeof GageModel> {}
+export type Gage = Instance<typeof GageModel>;
+export type GageSnapshotOut = SnapshotOut<typeof GageModel>;
+export type GageSnapshotIn = SnapshotIn<typeof GageModel>;

@@ -1,7 +1,22 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // src/components/__tests__/GageDetailsChart.event-reset.test.tsx
+import type { Gage } from "@models/Gage";
+import { act, render } from "@testing-library/react-native";
 import React from "react";
-import { render, act } from "@testing-library/react-native";
 import { GageDetailsChart } from "../GageDetailsChart";
+
+type MockChildrenProps = {
+  children?: React.ReactNode;
+};
+
+type MockConditionalProps = {
+  condition?: boolean;
+  children?: React.ReactNode;
+};
+
+type MockPickerProps = {
+  selectedValue?: string;
+};
 
 // --- Mocks ---
 const mockParamsBox: {
@@ -9,7 +24,7 @@ const mockParamsBox: {
 } = { current: {} };
 const mockSetParams = jest.fn();
 
-let capturedPickerSelectedValue: any = undefined;
+let capturedPickerSelectedValue: string | undefined;
 
 jest.mock("@common-ui/components/SegmentControl", () => ({
   SegmentControl: () => null,
@@ -53,10 +68,10 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 jest.mock("@gorhom/bottom-sheet", () => ({
   BottomSheetModal: () => null,
-  BottomSheetView: ({ children }: any) => children,
+  BottomSheetView: ({ children }: MockChildrenProps) => children ?? null,
 }));
 jest.mock("@react-native-picker/picker", () => {
-  function PickerMock(props: any) {
+  function PickerMock(props: MockPickerProps) {
     capturedPickerSelectedValue = props.selectedValue;
     return null;
   }
@@ -70,20 +85,22 @@ jest.mock("../DatePickerVariantSwitch", () => () => null);
 jest.mock("@common-ui/components/Icon", () => () => null);
 jest.mock("@common-ui/components/Card", () => {
   const React = require("react");
-  const Pass = ({ children }: any) => React.createElement(React.Fragment, null, children ?? null);
+  const Pass = ({ children }: MockChildrenProps) =>
+    React.createElement(React.Fragment, null, children ?? null);
   return { Card: Pass, CardHeader: Pass, CardFooter: Pass };
 });
 jest.mock("@common-ui/components/Common", () => {
   const React = require("react");
-  const Pass = ({ children }: any) => React.createElement(React.Fragment, null, children ?? null);
+  const Pass = ({ children }: MockChildrenProps) =>
+    React.createElement(React.Fragment, null, children ?? null);
   return { Row: Pass, Cell: Pass, RowOrCell: Pass };
 });
 jest.mock("@common-ui/components/Conditional", () => {
   const React = require("react");
   return {
-    If: ({ condition, children }: any) =>
+    If: ({ condition, children }: MockConditionalProps) =>
       condition ? React.createElement(React.Fragment, null, children) : null,
-    Ternary: ({ condition, children }: any) => {
+    Ternary: ({ condition, children }: MockConditionalProps) => {
       const arr = React.Children.toArray(children);
       return condition ? arr[0] ?? null : arr[1] ?? null;
     },
@@ -109,20 +126,22 @@ jest.mock("@config/config", () => ({
 
 const SELECT_EVENT = "gageDetailsChart._selectEvent";
 
-const mockGage: any = {
+const mockLocationInfo = {
+  floodEvents: [
+    { id: 5, eventName: "Feb 2020 Flood", fromDate: "2020-02-04", toDate: "2020-02-13" },
+    { id: 6, eventName: "Jan 2022 Flood", fromDate: "2022-01-05", toDate: "2022-01-12" },
+  ],
+  hasDischarge: false,
+  locationName: "North Fork Snoqualmie River",
+  dischargeMin: 0,
+  dischargeMax: 0,
+  yMin: 0,
+  yMax: 20,
+};
+
+const mockGage = {
   locationId: "USGS-NF10",
-  locationInfo: {
-    floodEvents: [
-      { id: 5, eventName: "Feb 2020 Flood", fromDate: "2020-02-04", toDate: "2020-02-13" },
-      { id: 6, eventName: "Jan 2022 Flood", fromDate: "2022-01-05", toDate: "2022-01-12" },
-    ],
-    hasDischarge: false,
-    locationName: "North Fork Snoqualmie River",
-    dischargeMin: 0,
-    dischargeMax: 0,
-    yMin: 0,
-    yMax: 20,
-  },
+  locationInfo: mockLocationInfo,
   readings: [],
   actualReadings: [],
   predictions: [],
@@ -133,7 +152,7 @@ const mockGage: any = {
   predictedPoints: [],
   noaaForecastData: [],
   hasData: false,
-};
+} as never as Gage;
 
 describe("GageDetailsChart — historic event picker resets when range changes", () => {
   beforeEach(() => {
@@ -168,10 +187,10 @@ describe("GageDetailsChart — historic event picker resets when range changes",
     const updatedGage = {
       ...mockGage,
       locationInfo: {
-        ...mockGage.locationInfo,
-        floodEvents: [...mockGage.locationInfo.floodEvents],
+        ...mockLocationInfo,
+        floodEvents: [...mockLocationInfo.floodEvents],
       },
-    };
+    } as never as Gage;
     await act(async () => {
       rerender(<GageDetailsChart gage={updatedGage} />);
     });

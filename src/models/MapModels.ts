@@ -3,7 +3,7 @@ import { Region } from "./Region";
 
 export type GageMapProps = {
   onGagePress: (gage: Gage) => void;
-  region: Region;
+  region?: Region;
   gages: Gage[];
 };
 

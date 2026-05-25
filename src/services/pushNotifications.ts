@@ -1,9 +1,9 @@
-import { Alert } from "react-native";
-import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
 import { Colors } from "@common-ui/constants/colors";
 import { isAndroid, isWeb } from "@common-ui/utils/responsive";
 import { openAppSettings } from "@utils/navigation";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import { Alert } from "react-native";
 
 // This is for foreground notifications
 Notifications.setNotificationHandler({
@@ -16,16 +16,29 @@ Notifications.setNotificationHandler({
   }),
 });
 
+function isPermissionGranted(permissions: Notifications.NotificationPermissionsStatus) {
+  const permissionState = permissions as Notifications.NotificationPermissionsStatus & {
+    granted?: boolean;
+    status?: Notifications.PermissionStatus;
+  };
+
+  if (typeof permissionState.granted === "boolean") {
+    return permissionState.granted;
+  }
+
+  return permissionState.status === Notifications.PermissionStatus.GRANTED;
+}
+
 export async function isPushNotificationsEnabledAsync() {
   const permissions = await Notifications.getPermissionsAsync();
-  return (permissions as any).granted ?? false;
+  return isPermissionGranted(permissions);
 }
 
 export async function registerForPushNotificationsAsync(
   requestPermissions: boolean,
   t
 ): Promise<string> {
-  let token: string;
+  let token = "";
 
   // We're not interested in PN's on web
   if (isWeb) {
@@ -43,11 +56,11 @@ export async function registerForPushNotificationsAsync(
 
   if (Device.isDevice) {
     const existingPermissions = await Notifications.getPermissionsAsync();
-    let isGranted: boolean = (existingPermissions as any).granted ?? false;
+    let isGranted = isPermissionGranted(existingPermissions);
 
     if (requestPermissions && !isGranted) {
       const permResponse = await Notifications.requestPermissionsAsync();
-      isGranted = (permResponse as any).granted ?? false;
+      isGranted = isPermissionGranted(permResponse);
     }
 
     if (requestPermissions && !isGranted) {

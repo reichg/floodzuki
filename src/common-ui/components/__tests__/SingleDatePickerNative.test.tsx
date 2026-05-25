@@ -1,9 +1,42 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // src/common-ui/components/__tests__/SingleDatePickerNative.test.tsx
-import React from "react";
-import { render, fireEvent, act } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import dayjs from "dayjs";
+import React from "react";
 import { SingleDatePickerNative } from "../SingleDatePickerNative";
+
+type MockChildrenProps = {
+  children?: React.ReactNode;
+};
+
+type MockBottomSheetHandle = {
+  present: () => void;
+  dismiss: () => void;
+};
+
+type PickerEvent = {
+  type: "set" | "dismissed";
+  nativeEvent?: object;
+};
+
+type PickerChangeHandler = (event: PickerEvent, date?: Date) => void;
+
+type AndroidOpenOptions = {
+  onChange: PickerChangeHandler;
+};
+
+type MockDateTimePickerProps = {
+  onChange: PickerChangeHandler;
+};
+
+type MockTextProps = {
+  text?: string;
+};
+
+type MockButtonProps = {
+  title?: string;
+  onPress?: () => void;
+};
 
 // ---------------------------------------------------------------------------
 // @services/localDayJs mock — extend dayjs with the timezone plugin so that
@@ -27,16 +60,18 @@ const mockPresent = jest.fn();
 const mockDismiss = jest.fn();
 
 jest.mock("@gorhom/bottom-sheet", () => {
-  const ReactModule = require("react");
-  const MockBottomSheetModal = ReactModule.forwardRef(({ children }: any, ref: any) => {
-    ReactModule.useImperativeHandle(ref, () => ({
-      present: mockPresent,
-      dismiss: mockDismiss,
-    }));
-    return ReactModule.createElement(ReactModule.Fragment, null, children);
-  });
+  const ReactModule: typeof React = require("react");
+  const MockBottomSheetModal = ReactModule.forwardRef<MockBottomSheetHandle, MockChildrenProps>(
+    ({ children }, ref) => {
+      ReactModule.useImperativeHandle(ref, () => ({
+        present: mockPresent,
+        dismiss: mockDismiss,
+      }));
+      return ReactModule.createElement(ReactModule.Fragment, null, children);
+    }
+  );
   MockBottomSheetModal.displayName = "MockBottomSheetModal";
-  const MockBottomSheetView = ({ children }: any) =>
+  const MockBottomSheetView = ({ children }: MockChildrenProps) =>
     ReactModule.createElement(ReactModule.Fragment, null, children);
   return {
     BottomSheetModal: MockBottomSheetModal,
@@ -52,14 +87,16 @@ jest.mock("@gorhom/bottom-sheet", () => {
 // DateTimePickerAndroid.open: delegated through mockAndroidOpenFn so the
 // reference is stable across jest-mock hoisting.
 // ---------------------------------------------------------------------------
-const mockAndroidOpenFn: jest.Mock & {
-  _capturePickerOnChange?: (event: any, date?: Date) => void;
-} = jest.fn();
+const mockAndroidOpenFn = jest.fn<void, [AndroidOpenOptions]>() as jest.MockedFunction<
+  (options: AndroidOpenOptions) => void
+> & {
+  _capturePickerOnChange?: PickerChangeHandler;
+};
 
 jest.mock("@react-native-community/datetimepicker", () => {
   const ReactModule = require("react");
 
-  const MockDateTimePicker = ({ onChange }: any) => {
+  const MockDateTimePicker = ({ onChange }: MockDateTimePickerProps) => {
     // Store the onChange via a module-level setter so tests can trigger changes.
     // We can't reference the outer let directly (not a `mock`-prefixed name),
     // but we CAN call a mock-prefixed function as a side channel.
@@ -72,7 +109,7 @@ jest.mock("@react-native-community/datetimepicker", () => {
     __esModule: true,
     default: MockDateTimePicker,
     DateTimePickerAndroid: {
-      open: (...args: any[]) => mockAndroidOpenFn(...args),
+      open: (options: AndroidOpenOptions) => mockAndroidOpenFn(options),
     },
   };
 });
@@ -81,7 +118,7 @@ jest.mock("@react-native-community/datetimepicker", () => {
 // Stub heavy UI dependencies
 // ---------------------------------------------------------------------------
 jest.mock("@common-ui/components/Text", () => ({
-  RegularText: ({ text }: any) => {
+  RegularText: ({ text }: MockTextProps) => {
     const ReactModule = require("react");
     const { Text } = require("react-native");
     return ReactModule.createElement(Text, { testID: "date-text" }, text);
@@ -89,7 +126,7 @@ jest.mock("@common-ui/components/Text", () => ({
 }));
 
 jest.mock("@common-ui/components/Button", () => ({
-  SolidButton: ({ title, onPress }: any) => {
+  SolidButton: ({ title, onPress }: MockButtonProps) => {
     const ReactModule = require("react");
     const { TouchableOpacity, Text } = require("react-native");
     return ReactModule.createElement(
@@ -102,7 +139,7 @@ jest.mock("@common-ui/components/Button", () => ({
 
 jest.mock("@common-ui/components/Common", () => {
   const ReactModule = require("react");
-  const Pass = ({ children }: any) =>
+  const Pass = ({ children }: MockChildrenProps) =>
     ReactModule.createElement(ReactModule.Fragment, null, children ?? null);
   return { Cell: Pass, Row: Pass };
 });
@@ -118,12 +155,12 @@ jest.mock("react-native-gesture-handler", () => {
 jest.mock("react-native-reanimated", () => ({
   measure: jest.fn(() => null),
   useAnimatedRef: () => ({ current: null }),
-  default: { createAnimatedComponent: (c: any) => c },
+  default: { createAnimatedComponent: <T,>(component: T) => component },
 }));
 
 // Helper to get the captured onChange from the inline DateTimePicker mock.
 // The mock stores it as a property on mockAndroidOpenFn as a side channel.
-function getPickerOnChange(): ((event: any, date?: Date) => void) | null {
+function getPickerOnChange(): PickerChangeHandler | null {
   return mockAndroidOpenFn._capturePickerOnChange ?? null;
 }
 
@@ -134,7 +171,7 @@ const GAUGE_TZ = "America/Los_Angeles";
 // faithful regardless of the system tz the suite runs under, build picker-
 // emitted dates as midnight in the gauge tz.
 const MOCK_PICKER_DATE = dayjs.tz("2026-05-15", "YYYY-MM-DD", GAUGE_TZ).toDate();
-const MOCK_PICKER_EVENT = { type: "set", nativeEvent: {} };
+const MOCK_PICKER_EVENT: PickerEvent = { type: "set", nativeEvent: {} };
 
 const BASE_PROPS = {
   selectedDate: dayjs.tz("2026-04-01", "YYYY-MM-DD", GAUGE_TZ),

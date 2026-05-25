@@ -32,7 +32,7 @@ export const parseUrlDate = (str: string, tz: string): Dayjs => {
   // Anything else is malformed — return an invalid Dayjs so callers can
   // detect it via .isValid(). dayjs's default parser is too permissive
   // (e.g. "7" parses as a valid date).
-  return localDayJs(null as unknown as string);
+  return localDayJs(null);
 };
 
 /** Format a Dayjs as YYYY-MM-DD in the gauge timezone (URL-safe, day-precision). */

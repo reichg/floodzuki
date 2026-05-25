@@ -1,6 +1,7 @@
-import React from "react";
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { render } from "@testing-library/react-native";
 import dayjs from "dayjs";
+import React from "react";
 import DatePickerVariantSwitch from "../DatePickerVariantSwitch";
 
 jest.mock("@config/config", () => ({

@@ -1,15 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
+import { Colors } from "@common-ui/constants/colors";
+import { Spacing } from "@common-ui/constants/spacing";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import Config from "@config/config";
+import localDayJs from "@services/localDayJs";
 import { Dayjs } from "dayjs";
+import React, { useEffect, useRef, useState } from "react";
+import { Pressable, ViewStyle } from "react-native";
+import { Cell } from "./Common";
 import DatePicker from "./DatePicker";
 import Icon from "./Icon";
-import { Colors } from "@common-ui/constants/colors";
-import Config from "@config/config";
 import { RegularText } from "./Text";
-import { Pressable, View, ViewStyle } from "react-native";
-import { Spacing } from "@common-ui/constants/spacing";
-import { Cell } from "./Common";
-import localDayJs from "@services/localDayJs";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
 
 type DateRangePickerProps = {
   startDate: Dayjs;
@@ -19,6 +19,12 @@ type DateRangePickerProps = {
   minYear?: number;
   maxYear?: number;
   onChange: (startDate: Dayjs, endDate: Dayjs) => void;
+};
+
+type DatePickerHandle = {
+  open: () => void;
+  close: () => void;
+  isPickerOpen: () => boolean;
 };
 
 const DateRangePicker = (props: DateRangePickerProps) => {
@@ -34,8 +40,8 @@ const DateRangePicker = (props: DateRangePickerProps) => {
 
   const { t } = useLocale();
 
-  const startRef = useRef(null);
-  const endRef = useRef(null);
+  const startRef = useRef<DatePickerHandle | null>(null);
+  const endRef = useRef<DatePickerHandle | null>(null);
 
   const [start, setStart] = useState<Dayjs>(startDate);
   const [end, setEnd] = useState<Dayjs>(endDate);
@@ -43,13 +49,11 @@ const DateRangePicker = (props: DateRangePickerProps) => {
 
   useEffect(() => {
     setStart(startDate);
-  }, [startDate.valueOf()]);
+  }, [startDate]);
 
   useEffect(() => {
     setEnd(endDate);
-  }, [endDate.valueOf()]);
-
-  const [pickedStart, setPickedStart] = useState<boolean>(false);
+  }, [endDate]);
 
   const openDateSelector = () => {
     if (mode.current === "start") {
@@ -72,7 +76,6 @@ const DateRangePicker = (props: DateRangePickerProps) => {
     let dateStart = date;
 
     mode.current = "end";
-    setPickedStart(true);
 
     if (date.isAfter(today)) {
       dateStart = today.subtract(1, "day");

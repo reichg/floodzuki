@@ -1,28 +1,28 @@
-import React, { useEffect } from "react";
 import { ErrorBoundaryProps, Stack, useGlobalSearchParams } from "expo-router";
 import Head from "expo-router/head";
+import React, { useEffect } from "react";
 
 import { observer } from "mobx-react-lite";
 
+import { Cell, Row } from "@common-ui/components/Common";
 import { Content, Screen } from "@common-ui/components/Screen";
 import { LargeTitle } from "@common-ui/components/Text";
+import { Spacing } from "@common-ui/constants/spacing";
 import { ErrorDetails } from "@components/ErrorDetails";
 import { ForecastChart } from "@components/ForecastChart";
 import { ExtendedGageSummaryCard, GageSummaryCard } from "@components/GageSummaryCard";
-import { Cell, Row } from "@common-ui/components/Common";
-import { Spacing } from "@common-ui/constants/spacing";
 
-import { useStores } from "@models/helpers/useStores";
-import { isAndroid, useResponsive } from "@common-ui/utils/responsive";
 import { IconButton, LinkButton } from "@common-ui/components/Button";
-import { If, Ternary } from "@common-ui/components/Conditional";
+import { Ternary } from "@common-ui/components/Conditional";
 import { Colors } from "@common-ui/constants/colors";
-import { useTimeout } from "@utils/useTimeout";
-import { useGoBack } from "@utils/useGoBack";
-import { ROUTES } from "app/_layout";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
-import ForecastFooter from "@components/ForecastFooter";
 import { Timing } from "@common-ui/constants/timing";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { useResponsive } from "@common-ui/utils/responsive";
+import ForecastFooter from "@components/ForecastFooter";
+import { useStores } from "@models/helpers/useStores";
+import { useGoBack } from "@utils/useGoBack";
+import { useTimeout } from "@utils/useTimeout";
+import { ROUTES } from "app/_layout";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -43,17 +43,17 @@ const ForecastDetailsScreen = observer(function ForecastDetailsScreen() {
 
   const [hidden, setHidden] = React.useState(isMobile ? true : false);
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     store.locationInfoStore.fetchData();
     store.forecastsStore.fetchData();
-  };
+  }, [store]);
 
   // Fetch data on mount
   useEffect(() => {
     if (store.isFetched) {
       fetchData();
     }
-  }, [store.isFetched]);
+  }, [fetchData, store.isFetched]);
 
   useTimeout(() => {
     setHidden(false);
@@ -89,16 +89,18 @@ const ForecastDetailsScreen = observer(function ForecastDetailsScreen() {
         <LargeTitle>{forecastGage?.title}</LargeTitle>
       </Row>
       <Content scrollable onRefresh={fetchData}>
-        <If condition={!!forecastGage}>
-          <ForecastChart gages={[forecastGage]} />
-          <Cell top={Spacing.mediumXL}>
-            <GageSummaryCard firstItem noDetails gage={forecastGage} />
-          </Cell>
-          <Cell top={Spacing.mediumXL}>
-            <ExtendedGageSummaryCard gage={forecastGage} />
-          </Cell>
-          <ForecastFooter />
-        </If>
+        {forecastGage ? (
+          <>
+            <ForecastChart gages={[forecastGage]} />
+            <Cell top={Spacing.mediumXL}>
+              <GageSummaryCard firstItem noDetails gage={forecastGage} />
+            </Cell>
+            <Cell top={Spacing.mediumXL}>
+              <ExtendedGageSummaryCard gage={forecastGage} />
+            </Cell>
+            <ForecastFooter />
+          </>
+        ) : null}
       </Content>
     </Screen>
   );

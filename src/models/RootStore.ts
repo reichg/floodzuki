@@ -1,10 +1,10 @@
 import { flow, Instance, SnapshotOut, types } from "mobx-state-tree";
-import { ForecastStoreModel } from "./Forecasts";
-import { GageStoreModel } from "./Gage";
+import { AuthSessionStoreModel } from "./AuthSession";
+import { Forecast, ForecastStoreModel } from "./Forecasts";
+import { Gage, GageStoreModel } from "./Gage";
 import { GageReadingStoreModel } from "./GageReading";
 import { LocationInfoModelStore } from "./LocationInfo";
 import { RegionModelStore } from "./Region";
-import { AuthSessionStoreModel } from "./AuthSession";
 
 /**
  * A RootStore model.
@@ -52,13 +52,15 @@ export const RootStoreModel = types
     };
 
     const getForecastGages = (gageIds: string[]) => {
-      return gageIds.map((id) => getForecastGage(id)).filter((gage) => gage !== null);
+      return gageIds
+        .map((id) => getForecastGage(id))
+        .filter((gage): gage is GageSummary => gage !== null);
     };
 
     const getForecasts = (gageIds: string[]) => {
       return gageIds
         .map((id) => store.forecastsStore.getForecast(id))
-        .filter((forecast) => !!forecast);
+        .filter((forecast): forecast is Forecast => forecast !== undefined);
     };
 
     const getTimezone = () => {
@@ -80,7 +82,8 @@ export const RootStoreModel = types
 
       return store.locationInfoStore.locationInfos
         .filter((location) => gageIds.includes(location.id))
-        .map((location) => gages.find((gage) => gage.locationId === location.id));
+        .map((location) => gages.find((gage) => gage.locationId === location.id))
+        .filter((gage): gage is Gage => gage !== undefined);
     };
 
     const getLocationWithGagesIds = () => {
@@ -99,7 +102,7 @@ export const RootStoreModel = types
 
       const gageIndex = locations.findIndex((location) => location.id === locationId);
 
-      return gageIndex > 0 && locations[gageIndex - 1];
+      return gageIndex > 0 ? locations[gageIndex - 1] : null;
     };
 
     const getDownstreamGageLocation = (locationId: string) => {
@@ -111,7 +114,7 @@ export const RootStoreModel = types
 
       const gageIndex = locations.findIndex((location) => location.id === locationId);
 
-      return gageIndex >= 0 && gageIndex + 1 < locations.length && locations[gageIndex + 1];
+      return gageIndex >= 0 && gageIndex + 1 < locations.length ? locations[gageIndex + 1] : null;
     };
 
     return {
@@ -147,8 +150,8 @@ export interface GageSummary {
 /**
  * The RootStore instance.
  */
-export interface RootStore extends Instance<typeof RootStoreModel> {}
+export type RootStore = Instance<typeof RootStoreModel>;
 /**
  * The data of a RootStore.
  */
-export interface RootStoreSnapshot extends SnapshotOut<typeof RootStoreModel> {}
+export type RootStoreSnapshot = SnapshotOut<typeof RootStoreModel>;

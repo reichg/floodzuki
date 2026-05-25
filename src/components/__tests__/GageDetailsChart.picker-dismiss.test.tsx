@@ -1,7 +1,36 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // src/components/__tests__/GageDetailsChart.picker-dismiss.test.tsx
+import type { Gage } from "@models/Gage";
+import { act, fireEvent, render } from "@testing-library/react-native";
+import type { Dayjs } from "dayjs";
 import React from "react";
-import { render, act, fireEvent } from "@testing-library/react-native";
 import { GageDetailsChart } from "../GageDetailsChart";
+
+type MockChildrenProps = {
+  children?: React.ReactNode;
+};
+
+type MockConditionalProps = {
+  condition?: boolean;
+  children?: React.ReactNode;
+};
+
+type MockDatePickerVariantSwitchProps = {
+  onChange: (start: Dayjs, end: Dayjs) => void;
+};
+
+type MockSegment = {
+  key: string;
+};
+
+type MockSegmentControlProps = {
+  onChange?: (key: string) => void;
+  segments?: MockSegment[];
+};
+
+type MockHistoricalPickerProps = {
+  onValueChange?: (value: string) => void;
+};
 
 const mockHidePicker = jest.fn();
 
@@ -54,12 +83,12 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 jest.mock("@gorhom/bottom-sheet", () => ({
   BottomSheetModal: () => null,
-  BottomSheetView: ({ children }: any) => children,
+  BottomSheetView: ({ children }: MockChildrenProps) => children ?? null,
 }));
-let capturedDatePickerOnChange: ((start: any, end: any) => void) | undefined;
+let capturedDatePickerOnChange: ((start: Dayjs, end: Dayjs) => void) | undefined;
 jest.mock("../DatePickerVariantSwitch", () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: MockDatePickerVariantSwitchProps) => {
     capturedDatePickerOnChange = props.onChange;
     return null;
   },
@@ -67,20 +96,22 @@ jest.mock("../DatePickerVariantSwitch", () => ({
 jest.mock("@common-ui/components/Icon", () => () => null);
 jest.mock("@common-ui/components/Card", () => {
   const React = require("react");
-  const Pass = ({ children }: any) => React.createElement(React.Fragment, null, children ?? null);
+  const Pass = ({ children }: MockChildrenProps) =>
+    React.createElement(React.Fragment, null, children ?? null);
   return { Card: Pass, CardHeader: Pass, CardFooter: Pass };
 });
 jest.mock("@common-ui/components/Common", () => {
   const React = require("react");
-  const Pass = ({ children }: any) => React.createElement(React.Fragment, null, children ?? null);
+  const Pass = ({ children }: MockChildrenProps) =>
+    React.createElement(React.Fragment, null, children ?? null);
   return { Row: Pass, Cell: Pass, RowOrCell: Pass };
 });
 jest.mock("@common-ui/components/Conditional", () => {
   const React = require("react");
   return {
-    If: ({ condition, children }: any) =>
+    If: ({ condition, children }: MockConditionalProps) =>
       condition ? React.createElement(React.Fragment, null, children) : null,
-    Ternary: ({ condition, children }: any) => {
+    Ternary: ({ condition, children }: MockConditionalProps) => {
       const arr = React.Children.toArray(children);
       return condition ? arr[0] ?? null : arr[1] ?? null;
     },
@@ -106,10 +137,10 @@ jest.mock("@config/config", () => ({
 
 // SegmentControl mock: renders a Pressable for each segment so tests can press them
 jest.mock("@common-ui/components/SegmentControl", () => ({
-  SegmentControl: ({ onChange, segments }: any) => {
+  SegmentControl: ({ onChange, segments }: MockSegmentControlProps) => {
     const React = require("react");
     const { Pressable } = require("react-native");
-    return (segments ?? []).map((s: any) =>
+    return (segments ?? []).map((s: MockSegment) =>
       React.createElement(Pressable, {
         key: s.key,
         testID: `segment-option-${s.key}`,
@@ -123,7 +154,7 @@ jest.mock("@common-ui/components/SegmentControl", () => ({
 jest.mock("@react-native-picker/picker", () => {
   const React = require("react");
   const { Pressable } = require("react-native");
-  const PickerMock = ({ onValueChange }: any) =>
+  const PickerMock = ({ onValueChange }: MockHistoricalPickerProps) =>
     React.createElement(Pressable, {
       testID: "historical-event-picker",
       onPress: () => onValueChange?.("22"),
@@ -134,7 +165,7 @@ jest.mock("@react-native-picker/picker", () => {
   return { Picker: PickerMock };
 });
 
-const mockGage: any = {
+const mockGage = {
   locationId: "USGS-NF10",
   locationInfo: {
     floodEvents: [
@@ -157,7 +188,7 @@ const mockGage: any = {
   predictedPoints: [],
   noaaForecastData: [],
   hasData: false,
-};
+} as never as Gage;
 
 describe("GageDetailsChart — picker dismissal", () => {
   beforeEach(() => {

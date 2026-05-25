@@ -1,14 +1,23 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // src/common-ui/components/__tests__/SplitDateRangePicker.test.tsx
-import React from "react";
-import { render, act } from "@testing-library/react-native";
+import { act, render } from "@testing-library/react-native";
 import dayjs, { Dayjs } from "dayjs";
+import React from "react";
 
 // ---------------------------------------------------------------------------
 // Import SUT after all mocks are registered
 // ---------------------------------------------------------------------------
-import { SplitDateRangePicker } from "../SplitDateRangePicker";
 import { applyRangeRules } from "@common-ui/utils/dateRangeRules";
+import { SplitDateRangePicker } from "../SplitDateRangePicker";
+
+type MockChildrenProps = {
+  children?: React.ReactNode;
+};
+
+type MockSingleDatePickerProps = {
+  selectedDate?: Dayjs;
+  onChange: (date: Dayjs) => void;
+};
 
 // ---------------------------------------------------------------------------
 // applyRangeRules mock — deterministic: picked date wins for the chosen side
@@ -62,7 +71,8 @@ jest.mock("../Text", () => ({
 jest.mock("../Common", () => {
   const ReactModule = require("react");
   return {
-    Cell: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    Cell: ({ children }: MockChildrenProps) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
   };
 });
 
@@ -74,7 +84,7 @@ const pickerOnChangeMap: Record<string, (d: Dayjs) => void> = {};
 jest.mock("../SingleDatePicker", () => {
   const ReactModule = require("react");
   return {
-    SingleDatePicker: ({ selectedDate, onChange }: any) => {
+    SingleDatePicker: ({ selectedDate, onChange }: MockSingleDatePickerProps) => {
       const key = selectedDate?.format("YYYY-MM-DD") ?? "unknown";
       pickerOnChangeMap[key] = onChange;
       return ReactModule.createElement("Text", { testID: `picker-${key}` }, key);
@@ -88,7 +98,7 @@ jest.mock("../SingleDatePicker", () => {
 jest.mock("../SingleDatePickerNative", () => {
   const ReactModule = require("react");
   return {
-    SingleDatePickerNative: ({ selectedDate, onChange }: any) => {
+    SingleDatePickerNative: ({ selectedDate, onChange }: MockSingleDatePickerProps) => {
       const key = selectedDate?.format("YYYY-MM-DD") ?? "unknown";
       pickerOnChangeMap[key] = onChange;
       return ReactModule.createElement("Text", { testID: `picker-${key}` }, key);

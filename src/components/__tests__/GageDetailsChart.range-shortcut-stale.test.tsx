@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // Regression: clicking a segment shortcut must read the CURRENT range,
 // not a stale one held by SegmentItem's memo bail-out.
 //
@@ -10,18 +11,39 @@
 //
 // This uses the REAL SegmentControl so the SegmentItem memo path is exercised.
 
+import type { Gage } from "@models/Gage";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import React from "react";
-import { fireEvent, render, act } from "@testing-library/react-native";
 import { GageDetailsChart } from "../GageDetailsChart";
 
-const mockParamsBox: { current: { from?: string; to?: string; historicEventId?: string } } = {
+type MockRouteParams = {
+  from?: string;
+  to?: string;
+  historicEventId?: string;
+};
+
+type MockChildrenProps = {
+  children?: React.ReactNode;
+};
+
+type MockConditionalProps = {
+  condition?: boolean;
+  children?: React.ReactNode;
+};
+
+type MockTextProps = {
+  children?: React.ReactNode;
+  testID?: string;
+};
+
+const mockParamsBox: { current: MockRouteParams } = {
   current: {},
 };
 const mockSetParams = jest.fn((patch: Record<string, string | undefined>) => {
-  const next = { ...mockParamsBox.current, ...patch };
-  Object.keys(patch).forEach((k) => {
-    if (patch[k] === undefined) {
-      delete (next as any)[k];
+  const next: MockRouteParams = { ...mockParamsBox.current, ...patch };
+  (Object.keys(patch) as (keyof MockRouteParams)[]).forEach((key) => {
+    if (patch[key] === undefined) {
+      delete next[key];
     }
   });
   mockParamsBox.current = next;
@@ -67,7 +89,7 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 jest.mock("@gorhom/bottom-sheet", () => ({
   BottomSheetModal: () => null,
-  BottomSheetView: ({ children }: any) => children,
+  BottomSheetView: ({ children }: MockChildrenProps) => children ?? null,
 }));
 jest.mock("@react-native-picker/picker", () => {
   function PickerMock() {
@@ -83,20 +105,22 @@ jest.mock("../DatePickerVariantSwitch", () => () => null);
 jest.mock("@common-ui/components/Icon", () => () => null);
 jest.mock("@common-ui/components/Card", () => {
   const React = require("react");
-  const Pass = ({ children }: any) => React.createElement(React.Fragment, null, children ?? null);
+  const Pass = ({ children }: MockChildrenProps) =>
+    React.createElement(React.Fragment, null, children ?? null);
   return { Card: Pass, CardHeader: Pass, CardFooter: Pass };
 });
 jest.mock("@common-ui/components/Common", () => {
   const React = require("react");
-  const Pass = ({ children }: any) => React.createElement(React.Fragment, null, children ?? null);
+  const Pass = ({ children }: MockChildrenProps) =>
+    React.createElement(React.Fragment, null, children ?? null);
   return { Row: Pass, Cell: Pass, RowOrCell: Pass };
 });
 jest.mock("@common-ui/components/Conditional", () => {
   const React = require("react");
   return {
-    If: ({ condition, children }: any) =>
+    If: ({ condition, children }: MockConditionalProps) =>
       condition ? React.createElement(React.Fragment, null, children) : null,
-    Ternary: ({ condition, children }: any) => {
+    Ternary: ({ condition, children }: MockConditionalProps) => {
       const arr = React.Children.toArray(children);
       return condition ? arr[0] ?? null : arr[1] ?? null;
     },
@@ -110,15 +134,15 @@ jest.mock("@common-ui/components/Button", () => ({
 jest.mock("@common-ui/components/Text", () => {
   const React = require("react");
   const { Text } = require("react-native");
-  const Pass = (props: any) => React.createElement(Text, null, props.children ?? null);
+  const Pass = (props: MockTextProps) => React.createElement(Text, null, props.children ?? null);
   return {
     MediumText: Pass,
     RegularText: Pass,
     SmallerText: Pass,
     LabelText: Pass,
-    MediumTitle: (props: any) =>
+    MediumTitle: (props: MockTextProps) =>
       React.createElement(Text, { testID: props.testID }, props.children ?? null),
-    SmallTitle: (props: any) =>
+    SmallTitle: (props: MockTextProps) =>
       React.createElement(Text, { testID: props.testID }, props.children ?? null),
   };
 });
@@ -130,7 +154,7 @@ jest.mock("@config/config", () => ({
   default: { LIVE_CHART_DATA_REFRESH_INTERVAL: 60000, GAGES_WITHOUT_DISHCARGE: [] },
 }));
 
-const mockGage: any = {
+const mockGage = {
   locationId: "USGS-NF10",
   locationInfo: {
     floodEvents: [],
@@ -151,12 +175,12 @@ const mockGage: any = {
   predictedPoints: [],
   noaaForecastData: [],
   hasData: false,
-};
+} as never as Gage;
 
 // Find a Pressable rendered by the real SegmentControl whose child text matches the given key.
 // The RANGES list maps "1" → "1 day", others → "Days" pluralized. We just look at the rendered
 // text containing the digit at the start.
-function findSegment(getAllByText: (m: any) => any[], key: string) {
+function findSegment(getAllByText: ReturnType<typeof render>["getAllByText"], key: string) {
   // SegmentControl rendered titles look like "1 day", "2 days", "7 days", "14 days".
   // Match against the rendered title key with a word boundary so "1" doesn't also match "14".
   const candidates = getAllByText(new RegExp(`^${key}\\b`));

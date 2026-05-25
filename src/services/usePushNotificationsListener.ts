@@ -1,16 +1,36 @@
-import { useEffect } from "react";
-import { useRouter } from "expo-router";
-import * as Notifications from "expo-notifications";
-import { isWeb } from "@common-ui/utils/responsive";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { isWeb } from "@common-ui/utils/responsive";
+import * as Notifications from "expo-notifications";
+import { Href, useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
 import { registerForPushNotificationsAsync } from "./pushNotifications";
+
+function getNotificationPath(notification: Notifications.Notification): Href | null {
+  const { data } = notification.request.content;
+
+  if (typeof data?.url === "string") {
+    return data.url as Href;
+  }
+
+  if (typeof data?.path === "string") {
+    return data.path as Href;
+  }
+
+  return null;
+}
 
 export function useRegisterPushNotificationsListener(requestPermissions: boolean) {
   const router = useRouter();
   const { t } = useLocale();
+  const initialRequestPermissionsRef = useRef(requestPermissions);
+  const translateRef = useRef(t);
 
   useEffect(() => {
-    registerForPushNotificationsAsync(requestPermissions, t);
+    translateRef.current = t;
+  }, [t]);
+
+  useEffect(() => {
+    registerForPushNotificationsAsync(initialRequestPermissionsRef.current, translateRef.current);
     Notifications.setBadgeCountAsync(0);
   }, []);
 
@@ -22,9 +42,10 @@ export function useRegisterPushNotificationsListener(requestPermissions: boolean
     }
 
     function redirect(notification: Notifications.Notification) {
-      const url = notification.request.content.data?.url || notification.request.content.data?.path;
+      const url = getNotificationPath(notification);
+
       if (url) {
-        router.push(url as any);
+        router.push(url);
       }
     }
 
@@ -43,5 +64,5 @@ export function useRegisterPushNotificationsListener(requestPermissions: boolean
       isMounted = false;
       subscription.remove();
     };
-  }, []);
+  }, [router]);
 }

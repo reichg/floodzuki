@@ -1,12 +1,11 @@
-import { InternalGageMapProps } from "@models/MapModels";
-import { useRouter } from "expo-router";
-import { useMemo, useRef } from "react";
 import { Camera, Map, Marker } from "@maplibre/maplibre-react-native";
-import { StyleSheet, ViewStyle } from "react-native";
-import { Spacing } from "../common-ui/constants/spacing";
-import TrendIcon, { TREND_ICON_TYPES } from "./TrendIcon";
-import Config from "../config/config";
+import { InternalGageMapProps } from "@models/MapModels";
 import Constants from "expo-constants";
+import { useMemo, useRef } from "react";
+import { StyleSheet } from "react-native";
+import { Spacing } from "../common-ui/constants/spacing";
+import Config from "../config/config";
+import TrendIcon, { TREND_ICON_TYPES } from "./TrendIcon";
 
 const mapStyleBaseUrl =
   Constants.expoConfig!.extra!.mapTileUrlBase || Config.DEFAULT_MAP_TILE_BASE_URL;
@@ -44,7 +43,6 @@ const MapLibreMobileGageMap = ({
   onGagePress,
   singleGage,
 }: InternalGageMapProps) => {
-  const router = useRouter();
   const mapRef = useRef(null);
 
   const mapStyleUrl = useMemo(() => {
@@ -73,7 +71,7 @@ const MapLibreMobileGageMap = ({
         <TrendIcon gage={g} iconType={TREND_ICON_TYPES.Map} />
       </Marker>
     ));
-  }, [mapRef, gages]);
+  }, [gages, onGagePress]);
 
   const regionBounds: [number, number, number, number] = useMemo(() => {
     if (region && region.regionBounds) {
@@ -114,7 +112,5 @@ const MapLibreMobileGageMap = ({
     </Map>
   );
 };
-
-const $mobileMapStyle: ViewStyle = {};
 
 export default MapLibreMobileGageMap;

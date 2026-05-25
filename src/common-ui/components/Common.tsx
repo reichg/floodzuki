@@ -3,9 +3,8 @@ import { ColorValue, View, ViewStyle } from "react-native";
 
 import { Colors } from "@common-ui/constants/colors";
 import { Spacing } from "@common-ui/constants/spacing";
-import { OffsetProps, useOffsetStyles } from "@common-ui/utils/useOffset";
-import { If } from "./Conditional";
 import { useResponsive } from "@common-ui/utils/responsive";
+import { OffsetProps, useOffsetStyles } from "@common-ui/utils/useOffset";
 
 type RowProps = {
   children?: React.ReactNode;
@@ -220,7 +219,7 @@ export const RowOrCell = (props: RowProps) => {
     );
   }
 
-  let columnChildren = [];
+  let columnChildren: React.ReactNode[] = [];
 
   if (Array.isArray(children)) {
     columnChildren = [...children];
@@ -282,22 +281,23 @@ export const AbsoluteContainer = ({
   ...offsetProps
 }: AbsoluteContainerProps) => {
   let styles: ViewStyle[] = [{ position: "absolute" }];
+  const stickPositions = sticks ?? [];
 
   styles = useOffsetStyles(styles, offsetProps);
 
-  if (sticks.includes("left")) {
+  if (stickPositions.includes("left")) {
     styles.push({ left: 0 });
   }
 
-  if (sticks.includes("right")) {
+  if (stickPositions.includes("right")) {
     styles.push({ right: 0 });
   }
 
-  if (sticks.includes("top")) {
+  if (stickPositions.includes("top")) {
     styles.push({ top: 0 });
   }
 
-  if (sticks.includes("bottom")) {
+  if (stickPositions.includes("bottom")) {
     styles.push({ bottom: 0 });
   }
 

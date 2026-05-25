@@ -1,19 +1,17 @@
 import React from "react";
 
+import { View } from "react-native";
 import {
-  VictoryChart,
-  VictoryLine,
   VictoryAxis,
-  VictoryScatter,
-  VictoryLegend,
-  VictoryVoronoiContainer,
-  VictoryTooltip,
-  VictoryContainer,
+  VictoryChart,
   VictoryLabel,
+  VictoryLegend,
+  VictoryLine,
+  VictoryScatter,
+  VictoryTooltip,
+  VictoryVoronoiContainer,
 } from "victory-native";
-import { Dimensions, View } from "react-native";
 import { CHART_HEIGHT } from "./forecastChartConstants";
-import { Cell } from "@common-ui/components/Common";
 
 interface ChartsProps {
   options: ForecastChartOptions;

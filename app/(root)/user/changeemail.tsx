@@ -1,23 +1,23 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ErrorBoundaryProps, Stack, useRouter } from "expo-router";
+import { ErrorBoundaryProps, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 
-import { Screen, Content } from "@common-ui/components/Screen";
-import { MediumText } from "@common-ui/components/Text";
-import { ErrorDetails } from "@components/ErrorDetails";
-import TitleWithBackButton from "@components/TitleWithBackButton";
-import { ROUTES } from "app/_layout";
-import { Spacing } from "@common-ui/constants/spacing";
+import { SolidButton } from "@common-ui/components/Button";
 import { Card, CardContent } from "@common-ui/components/Card";
 import { Cell, Row, RowOrCell } from "@common-ui/components/Common";
-import { Input } from "@common-ui/components/Input";
-import { SolidButton } from "@common-ui/components/Button";
-import { observer } from "mobx-react-lite";
-import { useStores } from "@models/helpers/useStores";
 import { If } from "@common-ui/components/Conditional";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
-import { useValidations } from "@utils/useValidations";
+import { Input } from "@common-ui/components/Input";
+import { Content, Screen } from "@common-ui/components/Screen";
+import { MediumText } from "@common-ui/components/Text";
+import { Spacing } from "@common-ui/constants/spacing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { ErrorDetails } from "@components/ErrorDetails";
+import TitleWithBackButton from "@components/TitleWithBackButton";
+import { useStores } from "@models/helpers/useStores";
+import { useValidations } from "@utils/useValidations";
+import { ROUTES } from "app/_layout";
 import Head from "expo-router/head";
+import { observer } from "mobx-react-lite";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -37,12 +37,14 @@ const ChangeEmailScreen = observer(function ChangeEmailScreen() {
   // Clear any errors when the screen is loaded
   useEffect(() => {
     authSessionStore.clearDataFetching();
-  }, []);
+  }, [authSessionStore]);
 
-  const submit = () => {
+  const submit = async () => {
     if (!isValid) {
       return;
     }
+
+    await authSessionStore.changeEmail({ email });
   };
 
   const goBack = () => {
@@ -66,7 +68,7 @@ const ChangeEmailScreen = observer(function ChangeEmailScreen() {
               </Cell>
               <Cell flex={5}>
                 <Input
-                  value=""
+                  value={email}
                   keyboardType="email-address"
                   placeholder={t("changeemailScreen.enterEmail")}
                   onChangeText={setEmail}

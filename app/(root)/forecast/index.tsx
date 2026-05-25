@@ -1,23 +1,23 @@
-import React, { useEffect } from "react";
-import { ErrorBoundaryProps, Stack } from "expo-router";
+import { ErrorBoundaryProps } from "expo-router";
 import Head from "expo-router/head";
+import React, { useEffect } from "react";
 
 import { observer } from "mobx-react-lite";
 
+import { RowOrCell } from "@common-ui/components/Common";
 import { Content, Screen } from "@common-ui/components/Screen";
+import { Spacing } from "@common-ui/constants/spacing";
 import { ErrorDetails } from "@components/ErrorDetails";
 import { ForecastChart } from "@components/ForecastChart";
 import { GageSummaryCard } from "@components/GageSummaryCard";
-import { RowOrCell } from "@common-ui/components/Common";
-import { Spacing } from "@common-ui/constants/spacing";
 
-import { useStores } from "@models/helpers/useStores";
-import Config from "@config/config";
-import { useInterval, useTimeout } from "@utils/useTimeout";
 import { Timing } from "@common-ui/constants/timing";
 import { useLocale } from "@common-ui/contexts/LocaleContext";
-import ForecastFooter from "@components/ForecastFooter";
 import { isMobile } from "@common-ui/utils/responsive";
+import ForecastFooter from "@components/ForecastFooter";
+import Config from "@config/config";
+import { useStores } from "@models/helpers/useStores";
+import { useInterval, useTimeout } from "@utils/useTimeout";
 
 // We use this to wrap each screen with an error boundary
 export function ErrorBoundary(props: ErrorBoundaryProps) {
@@ -30,10 +30,10 @@ const ForecastScreen = observer(function ForecastScreen() {
 
   const [hidden, setHidden] = React.useState(isMobile ? true : false);
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     await store.locationInfoStore.fetchData();
     await store.forecastsStore.fetchData();
-  };
+  }, [store]);
 
   useTimeout(() => {
     setHidden(false);
@@ -54,7 +54,7 @@ const ForecastScreen = observer(function ForecastScreen() {
     if (store.isFetched) {
       fetchData();
     }
-  }, [store.isFetched]);
+  }, [fetchData, store.isFetched]);
 
   const gageIds = Config.FORECAST_GAGE_IDS;
   const forecastGages = hidden ? [] : store.getForecastGages(gageIds);

@@ -1,7 +1,15 @@
 import { ApiResponse } from "apisauce";
 
+export type ApiProblemData =
+  | string
+  | number
+  | boolean
+  | null
+  | ApiProblemData[]
+  | { [key: string]: ApiProblemData };
+
 type ErrorData = {
-  data: string;
+  data: ApiProblemData;
 };
 
 type ErrorKind =
@@ -49,28 +57,32 @@ export type GeneralApiProblem = ErrorKind & ErrorData;
  *
  * @param response The api response.
  */
-export function getGeneralApiProblem(response: ApiResponse<any>): GeneralApiProblem | void {
+export function getGeneralApiProblem(
+  response: ApiResponse<ApiProblemData>
+): GeneralApiProblem | void | null {
+  const data = response.data as ApiProblemData;
+
   switch (response.problem) {
     case "CONNECTION_ERROR":
-      return { kind: "cannot-connect", data: response.data, temporary: true };
+      return { kind: "cannot-connect", data, temporary: true };
     case "NETWORK_ERROR":
-      return { kind: "cannot-connect", data: response.data, temporary: true };
+      return { kind: "cannot-connect", data, temporary: true };
     case "TIMEOUT_ERROR":
-      return { kind: "timeout", data: response.data, temporary: true };
+      return { kind: "timeout", data, temporary: true };
     case "SERVER_ERROR":
-      return { kind: "server", data: response.data };
+      return { kind: "server", data };
     case "UNKNOWN_ERROR":
-      return { kind: "unknown", data: response.data, temporary: true };
+      return { kind: "unknown", data, temporary: true };
     case "CLIENT_ERROR":
       switch (response.status) {
         case 401:
-          return { kind: "unauthorized", data: response.data };
+          return { kind: "unauthorized", data };
         case 403:
-          return { kind: "forbidden", data: response.data };
+          return { kind: "forbidden", data };
         case 404:
-          return { kind: "not-found", data: response.data };
+          return { kind: "not-found", data };
         default:
-          return { kind: "rejected", data: response.data };
+          return { kind: "rejected", data };
       }
     case "CANCEL_ERROR":
       return null;

@@ -9,12 +9,13 @@
  *
  * @refresh reset
  */
-import { applySnapshot, IDisposer, onSnapshot } from "mobx-state-tree";
-import type { RootStore } from "../RootStore";
-import * as storage from "@utils/storage";
-import { api } from "@services/api";
 import { changeLocale } from "@i18n/i18n";
+import { api } from "@services/api";
 import localDayJs from "@services/localDayJs";
+import * as storage from "@utils/storage";
+import { applySnapshot, IDisposer, onSnapshot, SnapshotIn } from "mobx-state-tree";
+import type { RootStore } from "../RootStore";
+import { RootStoreModel } from "../RootStore";
 
 /**
  * The key we'll be saving our state as within async storage.
@@ -25,31 +26,32 @@ export const ROOT_STORE_DEFAULT = {
   isFetched: false,
 };
 
+type RootStoreHydrationSnapshot = SnapshotIn<typeof RootStoreModel>;
+
 /**
  * Setup the root state.
  */
-let _disposer: IDisposer;
+let _disposer: IDisposer | undefined;
 export async function setupRootStore(rootStore: RootStore) {
-  let restoredState: Record<string, unknown> = {};
+  let restoredState: RootStoreHydrationSnapshot = ROOT_STORE_DEFAULT;
 
   try {
     // load the last known state from AsyncStorage
-    const loadedState: RootStore =
-      (await storage.load(ROOT_STATE_STORAGE_KEY)) || ROOT_STORE_DEFAULT;
+    const loadedState = await storage.load<RootStoreHydrationSnapshot>(ROOT_STATE_STORAGE_KEY);
 
     restoredState = {
-      ...loadedState,
-      forecastsStore: {
-        ...loadedState.forecastsStore,
-        maxReadingId: null,
-      },
+      ...(loadedState ?? ROOT_STORE_DEFAULT),
+      forecastsStore: loadedState?.forecastsStore
+        ? {
+            ...loadedState.forecastsStore,
+            maxReadingId: null,
+          }
+        : loadedState?.forecastsStore,
       isFetched: false,
     };
 
     // Setup Auth Token
-    // @ts-ignore
     if (loadedState?.authSessionStore?.authToken) {
-      // @ts-ignore
       api.setHeader("Authorization", `Bearer ${loadedState.authSessionStore.authToken}`);
     }
 
@@ -63,7 +65,7 @@ export async function setupRootStore(rootStore: RootStore) {
   } catch (e) {
     // if there's any problems loading, then inform the dev what happened
     if (__DEV__) {
-      console.error(e.message, null);
+      console.error(e instanceof Error ? e.message : e, null);
     }
   }
 
@@ -76,7 +78,9 @@ export async function setupRootStore(rootStore: RootStore) {
   _disposer = onSnapshot(rootStore, (snapshot) => storage.save(ROOT_STATE_STORAGE_KEY, snapshot));
 
   const unsubscribe = () => {
-    _disposer();
+    if (_disposer) {
+      _disposer();
+    }
     _disposer = undefined;
   };
 

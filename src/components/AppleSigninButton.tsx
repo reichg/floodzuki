@@ -1,13 +1,13 @@
-import React, { useEffect } from "react";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
 
-import { useStores } from "@models/helpers/useStores";
-import { ROUTES } from "app/_layout";
-import { useLocale } from "@common-ui/contexts/LocaleContext";
 import { If } from "@common-ui/components/Conditional";
 import ErrorMessage from "@common-ui/components/ErrorMessage";
+import { useLocale } from "@common-ui/contexts/LocaleContext";
+import { useStores } from "@models/helpers/useStores";
 import { logError } from "@utils/sentry";
+import { ROUTES } from "app/_layout";
 
 export const AppleSigninButton = () => {
   const { authSessionStore } = useStores();
@@ -37,6 +37,10 @@ export const AppleSigninButton = () => {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
+
+      if (!credentials.identityToken) {
+        throw new Error("Missing Apple identity token");
+      }
 
       await authSessionStore.processAppleToken({
         idToken: credentials.identityToken,

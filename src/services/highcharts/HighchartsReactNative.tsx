@@ -5,7 +5,7 @@ import { View, ViewStyle } from "react-native";
 import { WebView, WebViewMessageEvent, WebViewProps } from "react-native-webview";
 import { buildLayoutHtml } from "./HighchartsLayout";
 
-interface HighchartsReactNativeProps {
+export interface HighchartsReactNativeProps {
   options: Highcharts.Options;
   modules?: string[];
   styles?: ViewStyle;
@@ -13,8 +13,12 @@ interface HighchartsReactNativeProps {
   onMessage?: (data: string) => void;
   startInLoadingState?: boolean;
   webviewStyles?: ViewStyle;
-  setOptions?: Record<string, unknown>;
+  setOptions?: Highcharts.Options;
 }
+
+type AndroidWebViewProps = Partial<WebViewProps> & {
+  androidHardwareAccelerationDisabled?: boolean;
+};
 
 // Serialize Highcharts options to a JSON string, converting functions to
 // string representations so they survive the RN→WebView boundary.
@@ -55,9 +59,16 @@ const HighchartsReactNative = React.memo((props: HighchartsReactNativeProps) => 
 
   const webviewRef = useRef<WebView>(null);
   const [chartReady, setChartReady] = useState(false);
+  const androidWebViewProps: AndroidWebViewProps = {
+    androidHardwareAccelerationDisabled: true,
+  };
+  const modulesKey = modules.join(",");
 
   // Build HTML once per modules list — changes to modules force a WebView reload.
-  const html = useMemo(() => buildLayoutHtml(modules), [modules.join(",")]);
+  const html = useMemo(
+    () => buildLayoutHtml(modulesKey ? modulesKey.split(",") : []),
+    [modulesKey]
+  );
 
   // Send updated options to the already-rendered chart via postMessage.
   useEffect(() => {
@@ -108,7 +119,7 @@ const HighchartsReactNative = React.memo((props: HighchartsReactNativeProps) => 
         allowFileAccessFromFileURLs={true}
         startInLoadingState={startInLoadingState}
         style={webviewStyles}
-        {...({ androidHardwareAccelerationDisabled: true } as any)}
+        {...androidWebViewProps}
         {...webviewProps}
       />
     </View>

@@ -1,18 +1,45 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // src/common-ui/components/__tests__/DatePicker.test.tsx
-import React from "react";
-import { render, act } from "@testing-library/react-native";
+import { act, render } from "@testing-library/react-native";
 import dayjs from "dayjs";
+import React from "react";
 import DatePickerComponent from "../DatePicker";
+
+type DatePickerHandle = {
+  open: () => void;
+  close: () => void;
+  isPickerOpen: () => boolean;
+};
+
+type MockBottomSheetHandle = {
+  present: () => void;
+  dismiss: () => void;
+};
+
+type MockChildrenProps = {
+  children?: React.ReactNode;
+};
+
+type MockConditionalProps = {
+  condition?: boolean;
+  children?: React.ReactNode;
+};
+
+type WebPlatformSelectOptions<T> = {
+  web?: T;
+  default?: T;
+};
+
+const selectWeb = <T,>(obj: WebPlatformSelectOptions<T>) => obj.web ?? obj.default;
 
 jest.mock("react-native/Libraries/Utilities/Platform", () => ({
   default: {
     OS: "web",
-    select: (obj: any) => obj.web ?? obj.default,
+    select: selectWeb,
     isTesting: true,
   },
   OS: "web",
-  select: (obj: any) => obj.web ?? obj.default,
+  select: selectWeb,
   isTesting: true,
 }));
 
@@ -26,20 +53,22 @@ jest.mock("@common-ui/utils/responsive", () => ({
 jest.mock("react-native-reanimated", () => ({
   measure: jest.fn(() => ({ pageX: 50, pageY: 100, x: 50, y: 100, width: 200, height: 40 })),
   useAnimatedRef: () => ({ current: null }),
-  default: { createAnimatedComponent: (c: any) => c },
+  default: { createAnimatedComponent: <T,>(component: T) => component },
 }));
 
 const mockPresent = jest.fn();
 const mockDismiss = jest.fn();
 jest.mock("@gorhom/bottom-sheet", () => {
-  const ReactModule = require("react");
-  const MockBottomSheetModal = ReactModule.forwardRef((_props: any, ref: any) => {
-    ReactModule.useImperativeHandle(ref, () => ({
-      present: mockPresent,
-      dismiss: mockDismiss,
-    }));
-    return null;
-  });
+  const ReactModule: typeof React = require("react");
+  const MockBottomSheetModal = ReactModule.forwardRef<MockBottomSheetHandle, MockChildrenProps>(
+    (_props, ref) => {
+      ReactModule.useImperativeHandle(ref, () => ({
+        present: mockPresent,
+        dismiss: mockDismiss,
+      }));
+      return null;
+    }
+  );
   MockBottomSheetModal.displayName = "MockBottomSheetModal";
   return { BottomSheetModal: MockBottomSheetModal };
 });
@@ -73,7 +102,7 @@ jest.mock("@common-ui/components/Text", () => ({
 
 jest.mock("@common-ui/components/Common", () => {
   const ReactModule = require("react");
-  const Pass = ({ children }: any) =>
+  const Pass = ({ children }: MockChildrenProps) =>
     ReactModule.createElement(ReactModule.Fragment, null, children ?? null);
   return {
     AbsoluteContainer: Pass,
@@ -86,9 +115,9 @@ jest.mock("@common-ui/components/Common", () => {
 jest.mock("@common-ui/components/Conditional", () => {
   const ReactModule = require("react");
   return {
-    If: ({ condition, children }: any) =>
+    If: ({ condition, children }: MockConditionalProps) =>
       condition ? ReactModule.createElement(ReactModule.Fragment, null, children) : null,
-    Ternary: ({ condition, children }: any) => {
+    Ternary: ({ condition, children }: MockConditionalProps) => {
       const arr = ReactModule.Children.toArray(children);
       return condition ? arr[0] ?? null : arr[1] ?? null;
     },
@@ -101,7 +130,7 @@ jest.mock("@common-ui/components/SegmentControl", () => ({
 
 jest.mock("@common-ui/components/Card", () => {
   const ReactModule = require("react");
-  const Pass = ({ children }: any) =>
+  const Pass = ({ children }: MockChildrenProps) =>
     ReactModule.createElement(ReactModule.Fragment, null, children ?? null);
   return { Card: Pass };
 });
@@ -122,7 +151,7 @@ describe("DatePickerComponent on web with mobile viewport", () => {
   });
 
   it("calls showPicker (popover) when opened — not BottomSheetModal.present()", () => {
-    const ref = React.createRef<any>();
+    const ref = React.createRef<DatePickerHandle>();
     render(<DatePickerComponent ref={ref} selectedDate={selectedDate} onChange={jest.fn()} />);
 
     act(() => {
@@ -134,7 +163,7 @@ describe("DatePickerComponent on web with mobile viewport", () => {
   });
 
   it("calls hidePicker (popover) when closed — not BottomSheetModal.dismiss()", () => {
-    const ref = React.createRef<any>();
+    const ref = React.createRef<DatePickerHandle>();
     render(<DatePickerComponent ref={ref} selectedDate={selectedDate} onChange={jest.fn()} />);
 
     act(() => {

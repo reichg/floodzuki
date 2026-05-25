@@ -1,9 +1,9 @@
-import { Instance, SnapshotIn, SnapshotOut, types, flow } from "mobx-state-tree";
 import { api } from "@services/api";
+import { flow, Instance, SnapshotIn, SnapshotOut, types } from "mobx-state-tree";
 
+import localDayJs from "@services/localDayJs";
 import { dataFetchingProps, withDataFetchingActions } from "./helpers/withDataFetchingProps";
 import { withSetPropAction } from "./helpers/withSetPropsAction";
-import localDayJs from "@services/localDayJs";
 
 // "Region" Example data
 // "id": 1,
@@ -64,9 +64,9 @@ export const RegionModelStore = types
     };
   });
 
-export interface RegionStore extends Instance<typeof RegionModelStore> {}
-export interface RegionStoreSnapshot extends SnapshotOut<typeof RegionModelStore> {}
+export type RegionStore = Instance<typeof RegionModelStore>;
+export type RegionStoreSnapshot = SnapshotOut<typeof RegionModelStore>;
 
-export interface Region extends Instance<typeof RegionModel> {}
-export interface RegionSnapshotOut extends SnapshotOut<typeof RegionModel> {}
-export interface RegionSnapshotIn extends SnapshotIn<typeof RegionModel> {}
+export type Region = Instance<typeof RegionModel>;
+export type RegionSnapshotOut = SnapshotOut<typeof RegionModel>;
+export type RegionSnapshotIn = SnapshotIn<typeof RegionModel>;
